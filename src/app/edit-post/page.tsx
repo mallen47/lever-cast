@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ContentInput } from '@/components/content/ContentInput';
 import { ImageUpload } from '@/components/content/ImageUpload';
@@ -8,53 +7,24 @@ import { PlatformSelector } from '@/components/content/PlatformSelector';
 import { PreviewContainer } from '@/components/content/PreviewContainer';
 import { TemplateSelector } from '@/components/content/TemplateSelector';
 import { Card } from '@/components/ui/card';
-import { generateFormattedContent } from '@/lib/mock-data/generateContent';
-import { getDefaultPlatforms } from '@/lib/platforms';
-import { type PlatformContent, type PlatformId } from '@/types';
+import { usePostEditor } from '@/hooks';
 
 export default function EditPostPage() {
-	const [rawContent, setRawContent] = useState('');
-	const [selectedTemplate, setSelectedTemplate] = useState<string>('');
-	const [selectedPlatforms, setSelectedPlatforms] = useState<PlatformId[]>(
-		getDefaultPlatforms()
-	);
-	const [platformContent, setPlatformContent] = useState<PlatformContent>({});
-	const [isGenerating, setIsGenerating] = useState(false);
-	const [imageUrl, setImageUrl] = useState<string | undefined>();
-
-	const togglePlatform = (platformId: PlatformId) => {
-		setSelectedPlatforms((prev) =>
-			prev.includes(platformId)
-				? prev.filter((platform) => platform !== platformId)
-				: [...prev, platformId]
-		);
-	};
-
-	const handleGenerate = async () => {
-		if (!rawContent.trim()) return;
-
-		setIsGenerating(true);
-		// Simulate API delay
-		await new Promise((resolve) => setTimeout(resolve, 1000));
-
-		const content = generateFormattedContent(rawContent, selectedPlatforms);
-		setPlatformContent(content);
-		setIsGenerating(false);
-	};
-
-	const handleImageChange = (file: File | null) => {
-		// Clean up previous URL to prevent memory leak
-		if (imageUrl) {
-			URL.revokeObjectURL(imageUrl);
-		}
-
-		if (file) {
-			const url = URL.createObjectURL(file);
-			setImageUrl(url);
-		} else {
-			setImageUrl(undefined);
-		}
-	};
+	const {
+		rawContent,
+		platformContent,
+		selectedPlatforms,
+		selectedTemplate,
+		imageUrl,
+		isGenerating,
+		error,
+		setRawContent,
+		setSelectedTemplate,
+		togglePlatform,
+		handleImageChange,
+		generateContent,
+		clearError,
+	} = usePostEditor();
 
 	return (
 		<MainLayout>
@@ -68,6 +38,21 @@ export default function EditPostPage() {
 						formats.
 					</p>
 				</div>
+
+				{/* Error Display */}
+				{error && (
+					<div className='rounded-lg border border-destructive/50 bg-destructive/10 p-4'>
+						<div className='flex items-center justify-between'>
+							<p className='text-sm text-destructive'>{error}</p>
+							<button
+								onClick={clearError}
+								className='text-sm text-destructive hover:text-destructive/80'
+							>
+								Dismiss
+							</button>
+						</div>
+					</div>
+				)}
 
 				<div className='grid gap-6 lg:grid-cols-2'>
 					{/* Left Column - Input */}
@@ -87,7 +72,7 @@ export default function EditPostPage() {
 								<ContentInput
 									value={rawContent}
 									onChange={setRawContent}
-									onGenerate={handleGenerate}
+									onGenerate={generateContent}
 									isGenerating={isGenerating}
 								/>
 
