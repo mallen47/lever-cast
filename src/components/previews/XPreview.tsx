@@ -2,6 +2,8 @@
 
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { mockUser } from '@/lib/mock-data/user';
+import { MessageCircle, Repeat2, Heart, Share } from 'lucide-react';
 
 interface XPreviewProps {
 	content: string;
@@ -10,12 +12,7 @@ interface XPreviewProps {
 }
 
 export function XPreview({ content, imageUrl, className }: XPreviewProps) {
-	// Mock user data for preview
-	const mockUser = {
-		name: 'John Entrepreneur',
-		handle: '@johntech',
-		avatar: 'JD',
-	};
+	const xProfile = mockUser.platforms.x;
 
 	return (
 		<Card className={cn('overflow-hidden', className)}>
@@ -31,7 +28,7 @@ export function XPreview({ content, imageUrl, className }: XPreviewProps) {
 								{mockUser.name}
 							</h3>
 							<span className='text-sm text-gray-500 dark:text-gray-500'>
-								{mockUser.handle}
+								{xProfile?.handle}
 							</span>
 							<span className='text-sm text-gray-500 dark:text-gray-500'>
 								·
@@ -65,73 +62,35 @@ export function XPreview({ content, imageUrl, className }: XPreviewProps) {
 
 				{/* Engagement Metrics */}
 				<div className='flex items-center gap-6 text-sm text-gray-500 dark:text-gray-500'>
-					<button className='flex items-center gap-1 transition-colors hover:text-accent'>
-						<svg
-							className='h-5 w-5'
-							fill='none'
-							stroke='currentColor'
-							viewBox='0 0 24 24'
-						>
-							<path
-								strokeLinecap='round'
-								strokeLinejoin='round'
-								strokeWidth={2}
-								d='M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'
-							/>
-						</svg>
+					<button
+						className='flex items-center gap-1 transition-colors hover:text-accent'
+						aria-label="Reply to this post"
+					>
+						<MessageCircle className='h-5 w-5' />
 						<span>0</span>
 					</button>
-					<button className='flex items-center gap-1 transition-colors hover:text-accent'>
-						<svg
-							className='h-5 w-5'
-							fill='none'
-							stroke='currentColor'
-							viewBox='0 0 24 24'
-						>
-							<path
-								strokeLinecap='round'
-								strokeLinejoin='round'
-								strokeWidth={2}
-								d='M8.684 13.342c-.371 0-.713.107-1.005.3m1.005-.3L5.5 15.5m1.005-.3c.371-.371.713-.371 1.005 0m0 0L8.684 13.342m0 0L5.5 10.5m3.184 2.842L12 10.5m-3.316 2.842c.371.371.713.371 1.005 0M12 10.5l3.316 2.842c.371.371.713.371 1.005 0M12 10.5V8.5m0 2l-3.316 2.842M12 10.5l3.316 2.842M12 8.5c.371 0 .713.107 1.005.3m-1.005-.3L15.5 10.5m-1.005-.3c-.371-.371-.713-.371-1.005 0m0 0L12 8.5m0 0L8.684 10.342'
-							/>
-						</svg>
+					<button
+						className='flex items-center gap-1 transition-colors hover:text-accent'
+						aria-label="Repost this"
+					>
+						<Repeat2 className='h-5 w-5' />
 						<span>0</span>
 					</button>
-					<button className='flex items-center gap-1 transition-colors hover:text-accent'>
-						<svg
-							className='h-5 w-5'
-							fill='none'
-							stroke='currentColor'
-							viewBox='0 0 24 24'
-						>
-							<path
-								strokeLinecap='round'
-								strokeLinejoin='round'
-								strokeWidth={2}
-								d='M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z'
-							/>
-						</svg>
+					<button
+						className='flex items-center gap-1 transition-colors hover:text-accent'
+						aria-label="Like this post"
+					>
+						<Heart className='h-5 w-5' />
 						<span>0</span>
 					</button>
-					<button className='flex items-center gap-1 transition-colors hover:text-accent'>
-						<svg
-							className='h-5 w-5'
-							fill='none'
-							stroke='currentColor'
-							viewBox='0 0 24 24'
-						>
-							<path
-								strokeLinecap='round'
-								strokeLinejoin='round'
-								strokeWidth={2}
-								d='M8.684 13.342c-.371 0-.713.107-1.005.3m1.005-.3L5.5 15.5m1.005-.3c.371-.371.713-.371 1.005 0m0 0L8.684 13.342m0 0L5.5 10.5m3.184 2.842L12 10.5m-3.316 2.842c.371.371.713.371 1.005 0M12 10.5l3.316 2.842c.371.371.713.371 1.005 0M12 10.5V8.5m0 2l-3.316 2.842M12 10.5l3.316 2.842M12 8.5c.371 0 .713.107 1.005.3m-1.005-.3L15.5 10.5m-1.005-.3c-.371-.371-.713-.371-1.005 0m0 0L12 8.5m0 0L8.684 10.342'
-							/>
-						</svg>
+					<button
+						className='flex items-center gap-1 transition-colors hover:text-accent'
+						aria-label="Share this post"
+					>
+						<Share className='h-5 w-5' />
 					</button>
 				</div>
 			</div>
 		</Card>
 	);
 }
-
-

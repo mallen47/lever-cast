@@ -2,6 +2,7 @@
 
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 
 interface ContentInputProps {
@@ -23,14 +24,14 @@ export function ContentInput({
 				<Label htmlFor='content-input' className='text-base font-semibold'>
 					Enter your content idea
 				</Label>
-				<button
+				<Button
 					onClick={onGenerate}
 					disabled={!value.trim() || isGenerating}
-					className='flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed'
+					size="sm"
 				>
 					<Sparkles className='h-4 w-4' />
 					{isGenerating ? 'Generating...' : 'Generate Content'}
-				</button>
+				</Button>
 			</div>
 			<Textarea
 				id='content-input'
