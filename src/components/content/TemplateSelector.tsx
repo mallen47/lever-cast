@@ -8,7 +8,7 @@ import {
 	SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { mockTemplates, type Template } from '@/lib/mock-data/templates';
+import { mockTemplates } from '@/lib/mock-data/templates';
 
 interface TemplateSelectorProps {
 	value?: string;

@@ -3,12 +3,7 @@
  * In production, these would be fetched from the database
  */
 
-export interface Template {
-	id: string;
-	name: string;
-	description: string;
-	category?: string;
-}
+import type { Template } from "@/types";
 
 export const mockTemplates: Template[] = [
 	{

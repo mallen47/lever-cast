@@ -9,20 +9,20 @@ import { PreviewContainer } from '@/components/content/PreviewContainer';
 import { TemplateSelector } from '@/components/content/TemplateSelector';
 import { Card } from '@/components/ui/card';
 import { generateFormattedContent } from '@/lib/mock-data/generateContent';
+import { getDefaultPlatforms } from '@/lib/platforms';
+import { type PlatformContent, type PlatformId } from '@/types';
 
 export default function EditPostPage() {
 	const [rawContent, setRawContent] = useState('');
 	const [selectedTemplate, setSelectedTemplate] = useState<string>('');
-	const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([
-		'linkedin',
-		'x',
-	]);
-	const [linkedInContent, setLinkedInContent] = useState('');
-	const [xContent, setXContent] = useState('');
+	const [selectedPlatforms, setSelectedPlatforms] = useState<PlatformId[]>(
+		getDefaultPlatforms()
+	);
+	const [platformContent, setPlatformContent] = useState<PlatformContent>({});
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [imageUrl, setImageUrl] = useState<string | undefined>();
 
-	const togglePlatform = (platformId: string) => {
+	const togglePlatform = (platformId: PlatformId) => {
 		setSelectedPlatforms((prev) =>
 			prev.includes(platformId)
 				? prev.filter((platform) => platform !== platformId)
@@ -37,15 +37,18 @@ export default function EditPostPage() {
 		// Simulate API delay
 		await new Promise((resolve) => setTimeout(resolve, 1000));
 
-		const formatted = generateFormattedContent(rawContent);
-		setLinkedInContent(formatted.linkedin);
-		setXContent(formatted.x);
+		const content = generateFormattedContent(rawContent, selectedPlatforms);
+		setPlatformContent(content);
 		setIsGenerating(false);
 	};
 
 	const handleImageChange = (file: File | null) => {
+		// Clean up previous URL to prevent memory leak
+		if (imageUrl) {
+			URL.revokeObjectURL(imageUrl);
+		}
+
 		if (file) {
-			// Create a local URL for preview (mock - no actual upload)
 			const url = URL.createObjectURL(file);
 			setImageUrl(url);
 		} else {
@@ -97,11 +100,10 @@ export default function EditPostPage() {
 
 					{/* Right Column - Preview */}
 					<div className='space-y-6'>
-						{(linkedInContent || xContent) && (
+						{Object.keys(platformContent).length > 0 && (
 							<Card className='p-6'>
 								<PreviewContainer
-									linkedInContent={linkedInContent}
-									xContent={xContent}
+									content={platformContent}
 									imageUrl={imageUrl}
 									selectedPlatforms={selectedPlatforms}
 								/>

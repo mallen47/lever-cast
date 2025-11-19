@@ -2,47 +2,56 @@
 
 import { LinkedInPreview } from "@/components/previews/LinkedInPreview";
 import { XPreview } from "@/components/previews/XPreview";
+import { getPlatformConfig } from "@/lib/platforms";
+import { PLATFORMS, type PlatformContent, type PlatformId } from "@/types";
+import type { ComponentType } from "react";
+
+interface PreviewProps {
+  content: string;
+  imageUrl?: string;
+}
+
+// Preview component registry - add new platforms here
+const PREVIEW_COMPONENTS: Record<PlatformId, ComponentType<PreviewProps>> = {
+  [PLATFORMS.LINKEDIN]: LinkedInPreview,
+  [PLATFORMS.X]: XPreview,
+};
 
 interface PreviewContainerProps {
-  linkedInContent: string;
-  xContent: string;
+  content: PlatformContent;
   imageUrl?: string;
-  selectedPlatforms: string[];
+  selectedPlatforms: PlatformId[];
 }
 
 export function PreviewContainer({
-  linkedInContent,
-  xContent,
+  content,
   imageUrl,
   selectedPlatforms,
 }: PreviewContainerProps) {
-  const showLinkedIn = selectedPlatforms.includes("linkedin");
-  const showX = selectedPlatforms.includes("x");
-  const hasSelection = showLinkedIn || showX;
+  const hasSelection = selectedPlatforms.length > 0;
 
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Preview</h2>
       {hasSelection ? (
         <div className="grid gap-6 md:grid-cols-2">
-          {showLinkedIn && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <span className="h-3 w-3 rounded-full bg-[#0077b5]" />
-                LinkedIn
+          {selectedPlatforms.map((platformId) => {
+            const PreviewComponent = PREVIEW_COMPONENTS[platformId];
+            const config = getPlatformConfig(platformId);
+            const platformContent = content[platformId] ?? "";
+
+            if (!PreviewComponent) return null;
+
+            return (
+              <div key={platformId} className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <config.icon className="h-3 w-3" />
+                  {config.name}
+                </div>
+                <PreviewComponent content={platformContent} imageUrl={imageUrl} />
               </div>
-              <LinkedInPreview content={linkedInContent} imageUrl={imageUrl} />
-            </div>
-          )}
-          {showX && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <span className="h-3 w-3 rounded-full bg-black dark:bg-white" />
-                X
-              </div>
-              <XPreview content={xContent} imageUrl={imageUrl} />
-            </div>
-          )}
+            );
+          })}
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
