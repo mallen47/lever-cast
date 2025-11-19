@@ -34,7 +34,7 @@ The dev server runs with webpack mode (`--webpack` flag) and is available at htt
 - Ensure all UI controls are responsive
 - Focus on design, UX, and component structure rather than production architecture
 
-Mock data is stored in `src/lib/mock-data/` (e.g., `templates.ts`, `generateContent.ts`).
+Mock data is stored in `src/lib/mock-data/` (e.g., `templates.ts`, `user.ts`).
 
 ## Technology Stack
 
@@ -62,13 +62,18 @@ src/
 │   └── edit-post/
 ├── components/
 │   ├── ui/                # Base shadcn components (Button, Card, Input, Select, etc.)
+│   ├── icons/             # Custom icon components (XLogo)
 │   ├── layout/            # Layout components (MainLayout, Sidebar, ThemeToggle)
 │   ├── content/           # Content-related components (ContentInput, ImageUpload, TemplateSelector, etc.)
 │   └── previews/          # Platform-specific preview components (LinkedInPreview, XPreview)
+├── hooks/                  # Custom React hooks (usePostEditor)
 ├── lib/
+│   ├── platforms/         # Platform registry and configuration
 │   ├── providers/         # React context providers (theme-provider.tsx)
+│   ├── services/          # Service layer for data fetching abstractions
 │   ├── mock-data/         # Mock data for prototype phase
 │   └── utils.ts           # Utility functions (cn helper)
+├── types/                  # Centralized TypeScript type definitions
 └── public/                # Static assets
 ```
 
@@ -86,6 +91,36 @@ src/
 - Prefer existing shadcn components over creating new ones
 - Use lucide-react for all icons
 - Components should be responsive using Tailwind breakpoints
+- Add `aria-label` attributes to interactive elements for accessibility
+
+## Type System
+
+All shared types are centralized in `src/types/`. Import from here:
+
+```typescript
+import { PLATFORMS, PlatformId, User, Template, PlatformContent } from '@/types';
+```
+
+Use the `PLATFORMS` constant instead of magic strings for platform identifiers.
+
+## Platform Registry
+
+Platform configuration lives in `src/lib/platforms/registry.ts`. To add a new platform:
+
+1. Add constant to `PLATFORMS` in `src/types/platforms.ts`
+2. Add config to `platformRegistry` in `src/lib/platforms/registry.ts`
+3. Create preview component in `src/components/previews/`
+4. Add to `PREVIEW_COMPONENTS` in `PreviewContainer.tsx`
+
+## Custom Hooks
+
+Complex state is extracted into hooks in `src/hooks/`:
+
+- **usePostEditor**: Manages post editor state (content, platforms, templates, images, generation)
+
+## Service Layer
+
+Data fetching is abstracted in `src/lib/services/`. Services return Promises and can be swapped from mock to API without changing components.
 
 ## Theme System
 
