@@ -1,6 +1,13 @@
 'use client';
 
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import {
+	createContext,
+	useContext,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from 'react';
 
 type Theme = 'dark' | 'light';
 
@@ -12,32 +19,31 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// Lazy initialization function that safely reads from localStorage
-function getInitialTheme(): Theme {
-	// During SSR, localStorage doesn't exist, so return default
-	if (typeof window === 'undefined') {
-		return 'dark';
-	}
-	const savedTheme = localStorage.getItem('theme') as Theme;
-	if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
-		return savedTheme;
-	}
-	return 'dark';
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-	// Use lazy initialization to read from localStorage without setState in effect
-	const [theme, setTheme] = useState<Theme>(getInitialTheme);
+	// Always initialize with 'dark' to match server render
+	// The blocking script sets the DOM class, and suppressHydrationWarning on <html>
+	// allows the initial mismatch. We'll sync state from DOM after mount.
+	const [theme, setTheme] = useState<Theme>('dark');
 	const isInitialMount = useRef(true);
 
-	// Mark that initial mount is complete after first render
-	useEffect(() => {
+	// Sync state from DOM class (set by blocking script) after mount
+	// This ensures state matches what's actually rendered
+	useLayoutEffect(() => {
+		const root = document.documentElement;
+		const domTheme: Theme = root.classList.contains('dark')
+			? 'dark'
+			: 'light';
+		if (domTheme !== theme) {
+			setTheme(domTheme);
+		}
 		isInitialMount.current = false;
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	// Apply theme to DOM and save to localStorage
 	useEffect(() => {
 		const root = document.documentElement;
+		// Sync DOM with state
 		if (theme === 'dark') {
 			root.classList.add('dark');
 		} else {
@@ -45,8 +51,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 		}
 
 		// Only save to localStorage after initial mount to avoid overwriting
+		// The script already set it, so we only update on user changes
 		if (!isInitialMount.current) {
-			localStorage.setItem('theme', theme);
+			try {
+				localStorage.setItem('theme', theme);
+			} catch {
+				// localStorage might not be available
+			}
 		}
 	}, [theme]);
 
