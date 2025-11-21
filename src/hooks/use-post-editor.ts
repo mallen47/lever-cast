@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { getDefaultPlatforms } from "@/lib/platforms";
 import { generateFormattedContent } from "@/lib/services";
 import { type PlatformContent, type PlatformId } from "@/types";
@@ -51,14 +51,22 @@ export function usePostEditor(options?: UsePostEditorOptions): UsePostEditorRetu
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Cleanup Object URL on unmount to prevent memory leaks
+  // Use ref to track the current image URL for cleanup
+  const imageUrlRef = useRef<string | undefined>(undefined);
+
+  // Update ref whenever imageUrl changes
+  useEffect(() => {
+    imageUrlRef.current = imageUrl;
+  }, [imageUrl]);
+
+  // Cleanup Object URL ONLY on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
-      if (imageUrl) {
-        URL.revokeObjectURL(imageUrl);
+      if (imageUrlRef.current) {
+        URL.revokeObjectURL(imageUrlRef.current);
       }
     };
-  }, [imageUrl]);
+  }, []); // Empty deps = only runs on unmount
 
   const togglePlatform = useCallback((platformId: PlatformId) => {
     setSelectedPlatforms((prev) =>
@@ -71,17 +79,18 @@ export function usePostEditor(options?: UsePostEditorOptions): UsePostEditorRetu
   const handleImageChange = useCallback(
     (file: File | null) => {
       // Clean up previous URL to prevent memory leak
-      if (imageUrl) {
-        URL.revokeObjectURL(imageUrl);
+      if (imageUrlRef.current) {
+        URL.revokeObjectURL(imageUrlRef.current);
       }
 
       if (file) {
-        setImageUrl(URL.createObjectURL(file));
+        const newUrl = URL.createObjectURL(file);
+        setImageUrl(newUrl);
       } else {
         setImageUrl(undefined);
       }
     },
-    [imageUrl]
+    []
   );
 
   const generateContent = useCallback(async () => {
@@ -110,8 +119,8 @@ export function usePostEditor(options?: UsePostEditorOptions): UsePostEditorRetu
 
   const reset = useCallback(() => {
     // Clean up image URL before resetting
-    if (imageUrl) {
-      URL.revokeObjectURL(imageUrl);
+    if (imageUrlRef.current) {
+      URL.revokeObjectURL(imageUrlRef.current);
     }
 
     setRawContent(options?.initialContent ?? "");
@@ -121,7 +130,7 @@ export function usePostEditor(options?: UsePostEditorOptions): UsePostEditorRetu
     setImageUrl(undefined);
     setIsGenerating(false);
     setError(null);
-  }, [imageUrl, options?.initialContent, options?.initialPlatforms]);
+  }, [options?.initialContent, options?.initialPlatforms]);
 
   return {
     // State

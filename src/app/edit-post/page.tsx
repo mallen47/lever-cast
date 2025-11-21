@@ -69,15 +69,15 @@ export default function EditPostPage() {
 									onValueChange={setSelectedTemplate}
 								/>
 
+								<ImageUpload
+									onImageChange={handleImageChange}
+								/>
+
 								<ContentInput
 									value={rawContent}
 									onChange={setRawContent}
 									onGenerate={generateContent}
 									isGenerating={isGenerating}
-								/>
-
-								<ImageUpload
-									onImageChange={handleImageChange}
 								/>
 							</div>
 						</Card>
@@ -85,7 +85,7 @@ export default function EditPostPage() {
 
 					{/* Right Column - Preview */}
 					<div className='space-y-6'>
-						{Object.keys(platformContent).length > 0 && (
+						{(Object.keys(platformContent).length > 0 || imageUrl) && (
 							<Card className='p-6'>
 								<PreviewContainer
 									content={platformContent}

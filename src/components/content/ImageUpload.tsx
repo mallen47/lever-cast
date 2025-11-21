@@ -120,8 +120,8 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 					</div>
 				) : (
 					<>
-						<Upload className='mb-4 h-10 w-10 text-muted-foreground' />
-						<p className='mb-2 text-sm font-medium'>
+						<Upload className='mb-4 h-8 w-8 text-muted-foreground' />
+						<p className='mb-4 text-sm font-medium'>
 							Drag and drop an image here, or click to select
 						</p>
 						<Button
