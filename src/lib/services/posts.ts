@@ -11,13 +11,19 @@ import {
 	searchPosts,
 } from '@/lib/mock-data/posts';
 import type { Post, PostStatus } from '@/types';
+import {
+	API_DELAY_MS,
+	API_DELAY_POST_MS,
+	API_DELAY_DELETE_MS,
+	API_DELAY_PUBLISH_MS,
+} from '@/lib/constants';
 
 /**
  * Get all posts
  */
 export async function fetchPosts(): Promise<Post[]> {
 	// Simulate API delay
-	await new Promise((resolve) => setTimeout(resolve, 300));
+	await new Promise((resolve) => setTimeout(resolve, API_DELAY_MS));
 	return getAllPosts();
 }
 
@@ -26,7 +32,7 @@ export async function fetchPosts(): Promise<Post[]> {
  */
 export async function fetchPostsByStatus(status: PostStatus): Promise<Post[]> {
 	// Simulate API delay
-	await new Promise((resolve) => setTimeout(resolve, 300));
+	await new Promise((resolve) => setTimeout(resolve, API_DELAY_MS));
 	return getPostsByStatus(status);
 }
 
@@ -35,7 +41,7 @@ export async function fetchPostsByStatus(status: PostStatus): Promise<Post[]> {
  */
 export async function fetchPostById(id: string): Promise<Post | undefined> {
 	// Simulate API delay
-	await new Promise((resolve) => setTimeout(resolve, 200));
+	await new Promise((resolve) => setTimeout(resolve, API_DELAY_POST_MS));
 	return getPostById(id);
 }
 
@@ -44,7 +50,7 @@ export async function fetchPostById(id: string): Promise<Post | undefined> {
  */
 export async function searchPostsByQuery(query: string): Promise<Post[]> {
 	// Simulate API delay
-	await new Promise((resolve) => setTimeout(resolve, 300));
+	await new Promise((resolve) => setTimeout(resolve, API_DELAY_MS));
 	return searchPosts(query);
 }
 
@@ -53,7 +59,7 @@ export async function searchPostsByQuery(query: string): Promise<Post[]> {
  */
 export async function deletePost(id: string): Promise<void> {
 	// Simulate API delay
-	await new Promise((resolve) => setTimeout(resolve, 500));
+	await new Promise((resolve) => setTimeout(resolve, API_DELAY_DELETE_MS));
 	// In production, this would call an API
 	console.log('Post deleted:', id);
 }
@@ -63,7 +69,7 @@ export async function deletePost(id: string): Promise<void> {
  */
 export async function publishPost(id: string): Promise<void> {
 	// Simulate API delay
-	await new Promise((resolve) => setTimeout(resolve, 1000));
+	await new Promise((resolve) => setTimeout(resolve, API_DELAY_PUBLISH_MS));
 	// In production, this would call an API
 	console.log('Post published:', id);
 }

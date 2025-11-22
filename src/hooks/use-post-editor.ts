@@ -68,63 +68,6 @@ export function usePostEditor(
 		};
 	}, []); // Empty deps = only runs on unmount
 
-	// Internal function to generate content for selected platforms
-	const generateContentForPlatforms = useCallback(
-		async (platforms: PlatformId[]) => {
-			if (!rawContent.trim() || platforms.length === 0) {
-				// If no content or no platforms, clear the content for deselected platforms
-				setPlatformContent((prev) => {
-					const updated = { ...prev };
-					// Remove content for platforms that are no longer selected
-					Object.keys(updated).forEach((key) => {
-						if (!platforms.includes(key as PlatformId)) {
-							delete updated[key as PlatformId];
-						}
-					});
-					return updated;
-				});
-				return;
-			}
-
-			try {
-				setError(null);
-				setIsGenerating(true);
-
-				const content = await generateFormattedContent(
-					rawContent,
-					platforms,
-					selectedTemplate || undefined
-				);
-
-				setPlatformContent((prev) => {
-					const updated = { ...prev };
-					// Update content for selected platforms
-					platforms.forEach((platformId) => {
-						if (content[platformId]) {
-							updated[platformId] = content[platformId];
-						}
-					});
-					// Remove content for platforms that are no longer selected
-					Object.keys(updated).forEach((key) => {
-						if (!platforms.includes(key as PlatformId)) {
-							delete updated[key as PlatformId];
-						}
-					});
-					return updated;
-				});
-			} catch (e) {
-				const message =
-					e instanceof Error
-						? e.message
-						: 'Failed to generate content';
-				setError(message);
-			} finally {
-				setIsGenerating(false);
-			}
-		},
-		[rawContent, selectedTemplate]
-	);
-
 	const togglePlatform = useCallback((platformId: PlatformId) => {
 		setSelectedPlatforms((prev) => {
 			const isCurrentlySelected = prev.includes(platformId);
@@ -150,18 +93,79 @@ export function usePostEditor(
 
 	// Generate content when platforms, rawContent, or template changes
 	useEffect(() => {
-		if (selectedPlatforms.length > 0 && rawContent.trim()) {
-			generateContentForPlatforms(selectedPlatforms);
-		} else if (selectedPlatforms.length === 0) {
-			// Clear all content when no platforms are selected
+		// If no platforms selected, clear content
+		if (selectedPlatforms.length === 0) {
 			setPlatformContent({});
+			return;
 		}
-	}, [
-		selectedPlatforms,
-		rawContent,
-		selectedTemplate,
-		generateContentForPlatforms,
-	]);
+
+		// If no content, clear platform content for deselected platforms
+		if (!rawContent.trim()) {
+			setPlatformContent((prev) => {
+				const updated = { ...prev };
+				Object.keys(updated).forEach((key) => {
+					if (!selectedPlatforms.includes(key as PlatformId)) {
+						delete updated[key as PlatformId];
+					}
+				});
+				return updated;
+			});
+			return;
+		}
+
+		// Generate content for selected platforms
+		let cancelled = false;
+
+		const generateContent = async () => {
+			try {
+				setError(null);
+				setIsGenerating(true);
+
+				const content = await generateFormattedContent(
+					rawContent,
+					selectedPlatforms,
+					selectedTemplate || undefined
+				);
+
+				if (!cancelled) {
+					setPlatformContent((prev) => {
+						const updated = { ...prev };
+						// Update content for selected platforms
+						selectedPlatforms.forEach((platformId) => {
+							if (content[platformId]) {
+								updated[platformId] = content[platformId];
+							}
+						});
+						// Remove content for platforms that are no longer selected
+						Object.keys(updated).forEach((key) => {
+							if (!selectedPlatforms.includes(key as PlatformId)) {
+								delete updated[key as PlatformId];
+							}
+						});
+						return updated;
+					});
+				}
+			} catch (e) {
+				if (!cancelled) {
+					const message =
+						e instanceof Error
+							? e.message
+							: 'Failed to generate content';
+					setError(message);
+				}
+			} finally {
+				if (!cancelled) {
+					setIsGenerating(false);
+				}
+			}
+		};
+
+		generateContent();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [selectedPlatforms, rawContent, selectedTemplate]);
 
 	const clearError = useCallback(() => setError(null), []);
 

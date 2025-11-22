@@ -21,6 +21,8 @@ import {
 import type { Post, PostStatus } from '@/types';
 import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useDebounce } from '@/hooks';
+import { SEARCH_DEBOUNCE_MS } from '@/lib/constants';
 
 export default function PostsPage() {
 	const [posts, setPosts] = useState<Post[]>([]);
@@ -30,19 +32,24 @@ export default function PostsPage() {
 	const [isLoading, setIsLoading] = useState(true);
 	const router = useRouter();
 
+	// Debounce search query to avoid excessive filtering
+	const debouncedSearchQuery = useDebounce(searchQuery, SEARCH_DEBOUNCE_MS);
+
 	// Fetch posts on mount
 	useEffect(() => {
 		loadPosts();
 	}, []);
 
-	// Filter posts when status or search changes
+	// Filter posts when status or debounced search changes
 	useEffect(() => {
+		let cancelled = false;
+
 		const applyFilters = async () => {
 			let result: Post[] = [];
 
-			// Apply search filter
-			if (searchQuery.trim()) {
-				result = await searchPostsByQuery(searchQuery);
+			// Apply search filter (using debounced value)
+			if (debouncedSearchQuery.trim()) {
+				result = await searchPostsByQuery(debouncedSearchQuery);
 			} else {
 				result = [...posts];
 			}
@@ -52,11 +59,18 @@ export default function PostsPage() {
 				result = result.filter((post) => post.status === statusFilter);
 			}
 
-			setFilteredPosts(result);
+			// Only update state if not cancelled
+			if (!cancelled) {
+				setFilteredPosts(result);
+			}
 		};
 
 		applyFilters();
-	}, [posts, statusFilter, searchQuery]);
+
+		return () => {
+			cancelled = true;
+		};
+	}, [posts, statusFilter, debouncedSearchQuery]);
 
 	const loadPosts = async () => {
 		setIsLoading(true);
@@ -162,7 +176,7 @@ export default function PostsPage() {
 				) : filteredPosts.length === 0 ? (
 					<Card className='p-6'>
 						<p className='text-center text-muted-foreground'>
-							{searchQuery || statusFilter !== 'all'
+							{debouncedSearchQuery || statusFilter !== 'all'
 								? 'No posts match your filters.'
 								: 'No posts yet. Create your first post!'}
 						</p>

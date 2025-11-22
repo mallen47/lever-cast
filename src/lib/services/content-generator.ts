@@ -5,6 +5,7 @@
  */
 
 import { PLATFORMS, type PlatformContent, type PlatformId } from "@/types";
+import { CONTENT_GENERATION_DELAY_MS } from "@/lib/constants";
 
 /**
  * Generate formatted content for selected platforms
@@ -19,7 +20,7 @@ export async function generateFormattedContent(
   templateId?: string
 ): Promise<PlatformContent> {
   // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, CONTENT_GENERATION_DELAY_MS));
 
   const trimmed = rawContent.trim();
 
