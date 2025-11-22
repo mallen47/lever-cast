@@ -21,7 +21,10 @@ export function TemplateSelector({
 }: TemplateSelectorProps) {
 	return (
 		<div className='space-y-2'>
-			<Label htmlFor='template-select' className='text-base font-semibold'>
+			<Label
+				htmlFor='template-select'
+				className='text-base font-semibold'
+			>
 				Select Template
 			</Label>
 			<Select value={value} onValueChange={onValueChange}>
@@ -32,7 +35,9 @@ export function TemplateSelector({
 					{mockTemplates.map((template) => (
 						<SelectItem key={template.id} value={template.id}>
 							<div className='flex flex-col'>
-								<span className='font-medium'>{template.name}</span>
+								<span className='font-medium'>
+									{template.name}
+								</span>
 								<span className='text-xs text-muted-foreground'>
 									{template.description}
 								</span>
@@ -41,11 +46,6 @@ export function TemplateSelector({
 					))}
 				</SelectContent>
 			</Select>
-			<p className='text-sm text-muted-foreground'>
-				Select a template to format your content. You can create custom templates
-				on the Templates page.
-			</p>
 		</div>
 	);
 }
-

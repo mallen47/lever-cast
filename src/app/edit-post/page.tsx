@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ContentInput } from '@/components/content/ContentInput';
 import { ImageUpload } from '@/components/content/ImageUpload';
@@ -7,6 +8,7 @@ import { PlatformSelector } from '@/components/content/PlatformSelector';
 import { PreviewContainer } from '@/components/content/PreviewContainer';
 import { TemplateSelector } from '@/components/content/TemplateSelector';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { usePostEditor } from '@/hooks';
 
 export default function EditPostPage() {
@@ -22,21 +24,16 @@ export default function EditPostPage() {
 		setSelectedTemplate,
 		togglePlatform,
 		handleImageChange,
-		generateContent,
 		clearError,
 	} = usePostEditor();
 
 	return (
 		<MainLayout>
-			<div className='space-y-6'>
+			<div className='container mx-auto max-w-4xl space-y-6'>
 				<div>
 					<h1 className='text-3xl font-bold text-foreground'>
 						New Post
 					</h1>
-					<p className='mt-2 text-muted-foreground'>
-						Enter your content ideas and generate platform-specific
-						formats.
-					</p>
 				</div>
 
 				{/* Error Display */}
@@ -54,48 +51,68 @@ export default function EditPostPage() {
 					</div>
 				)}
 
-				<div className='grid gap-6 lg:grid-cols-2'>
-					{/* Left Column - Input */}
-					<div>
-						<Card className='p-6'>
-							<div className='space-y-6'>
-								<PlatformSelector
-									selectedPlatforms={selectedPlatforms}
-									onToggle={togglePlatform}
-								/>
+				<Card className='p-6'>
+					<div className='space-y-8'>
+						{/* Input Section */}
+						<div className='space-y-8'>
+							<TemplateSelector
+								value={selectedTemplate}
+								onValueChange={setSelectedTemplate}
+							/>
 
-								<TemplateSelector
-									value={selectedTemplate}
-									onValueChange={setSelectedTemplate}
-								/>
+							<ImageUpload onImageChange={handleImageChange} />
 
-								<ImageUpload
-									onImageChange={handleImageChange}
-								/>
+							<ContentInput
+								value={rawContent}
+								onChange={setRawContent}
+							/>
 
-								<ContentInput
-									value={rawContent}
-									onChange={setRawContent}
-									onGenerate={generateContent}
-									isGenerating={isGenerating}
-								/>
-							</div>
-						</Card>
-					</div>
+							<PlatformSelector
+								selectedPlatforms={selectedPlatforms}
+								onToggle={togglePlatform}
+							/>
+						</div>
 
-					{/* Right Column - Preview */}
-					<div className='space-y-6'>
-						{(Object.keys(platformContent).length > 0 || imageUrl) && (
+						{/* Preview Section */}
+						{(selectedPlatforms.length > 0 || imageUrl) && (
 							<Card className='p-6'>
+								{isGenerating && (
+									<div className='mb-4 text-sm text-muted-foreground'>
+										Generating preview...
+									</div>
+								)}
 								<PreviewContainer
 									content={platformContent}
 									imageUrl={imageUrl}
 									selectedPlatforms={selectedPlatforms}
+									rawContent={rawContent}
 								/>
 							</Card>
 						)}
+
+						{/* Publish Button */}
+						{selectedPlatforms.length > 0 && rawContent.trim() && (
+							<div className='flex justify-end'>
+								<Button
+									onClick={() => {
+										// TODO: Implement publish functionality
+										console.log('Publishing post...', {
+											rawContent,
+											platformContent,
+											selectedPlatforms,
+											selectedTemplate,
+											imageUrl,
+										});
+									}}
+									disabled={isGenerating}
+									size='lg'
+								>
+									Publish
+								</Button>
+							</div>
+						)}
 					</div>
-				</div>
+				</Card>
 			</div>
 		</MainLayout>
 	);
