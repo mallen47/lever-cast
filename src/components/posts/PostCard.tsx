@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,6 +10,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 import { PostStatusBadge } from './PostStatusBadge';
 import type { Post } from '@/types';
 import { Edit, Trash2, ExternalLink, MoreVertical } from 'lucide-react';
@@ -25,6 +26,7 @@ interface PostCardProps {
 const CONTENT_PREVIEW_LENGTH = 150;
 
 export function PostCard({ post, onEdit, onDelete, onPublish }: PostCardProps) {
+	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const contentPreview = post.rawContent.slice(0, CONTENT_PREVIEW_LENGTH);
 	const hasMoreContent = post.rawContent.length > CONTENT_PREVIEW_LENGTH;
 	const platforms = Object.keys(post.platformContent);
@@ -33,10 +35,12 @@ export function PostCard({ post, onEdit, onDelete, onPublish }: PostCardProps) {
 		onEdit?.(post);
 	};
 
-	const handleDelete = () => {
-		if (confirm('Are you sure you want to delete this post?')) {
-			onDelete?.(post.id);
-		}
+	const handleDeleteClick = () => {
+		setShowDeleteModal(true);
+	};
+
+	const handleDeleteConfirm = () => {
+		onDelete?.(post.id);
 	};
 
 	const handlePublish = () => {
@@ -84,7 +88,7 @@ export function PostCard({ post, onEdit, onDelete, onPublish }: PostCardProps) {
 							)}
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
-								onClick={handleDelete}
+								onClick={handleDeleteClick}
 								className='text-destructive focus:text-destructive'
 							>
 								<Trash2 className='mr-2 h-4 w-4' />
@@ -130,6 +134,17 @@ export function PostCard({ post, onEdit, onDelete, onPublish }: PostCardProps) {
 					</div>
 				)}
 			</CardContent>
+
+			<ConfirmationModal
+				open={showDeleteModal}
+				onOpenChange={setShowDeleteModal}
+				title='Delete Post'
+				description='Are you sure you want to delete this post? This action cannot be undone.'
+				confirmText='Delete'
+				cancelText='Cancel'
+				variant='destructive'
+				onConfirm={handleDeleteConfirm}
+			/>
 		</Card>
 	);
 }

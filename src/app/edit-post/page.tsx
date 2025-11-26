@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ContentInput } from '@/components/content/ContentInput';
 import { ImageUpload } from '@/components/content/ImageUpload';
@@ -10,8 +11,10 @@ import { TemplateSelector } from '@/components/content/TemplateSelector';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { usePostEditor } from '@/hooks';
+import { toast } from 'sonner';
 
 export default function EditPostPage() {
+	const searchParams = useSearchParams();
 	const {
 		rawContent,
 		platformContent,
@@ -24,8 +27,24 @@ export default function EditPostPage() {
 		setSelectedTemplate,
 		togglePlatform,
 		handleImageChange,
-		clearError,
 	} = usePostEditor();
+
+	// Handle template query parameter
+	useEffect(() => {
+		const templateId = searchParams.get('template');
+		if (templateId && templateId !== selectedTemplate) {
+			setSelectedTemplate(templateId);
+		}
+	}, [searchParams, selectedTemplate, setSelectedTemplate]);
+
+	// Show toast notification when error occurs
+	useEffect(() => {
+		if (error) {
+			toast.error('Content generation failed', {
+				description: error,
+			});
+		}
+	}, [error]);
 
 	return (
 		<MainLayout>
@@ -35,21 +54,6 @@ export default function EditPostPage() {
 						New Post
 					</h1>
 				</div>
-
-				{/* Error Display */}
-				{error && (
-					<div className='rounded-lg border border-destructive/50 bg-destructive/10 p-4'>
-						<div className='flex items-center justify-between'>
-							<p className='text-sm text-destructive'>{error}</p>
-							<button
-								onClick={clearError}
-								className='text-sm text-destructive hover:text-destructive/80'
-							>
-								Dismiss
-							</button>
-						</div>
-					</div>
-				)}
 
 				<Card className='p-6'>
 					<div className='space-y-8'>
@@ -102,6 +106,15 @@ export default function EditPostPage() {
 											selectedPlatforms,
 											selectedTemplate,
 											imageUrl,
+										});
+										toast.success('Post published', {
+											description: `Your post has been published to ${
+												selectedPlatforms.length
+											} platform${
+												selectedPlatforms.length > 1
+													? 's'
+													: ''
+											}.`,
 										});
 									}}
 									disabled={isGenerating}

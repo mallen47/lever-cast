@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface ImageUploadProps {
 	onImageChange: (file: File | null) => void;
@@ -17,11 +18,26 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 
 	const handleFile = (file: File) => {
 		if (file && file.type.startsWith('image/')) {
+			// Check file size (max 10MB)
+			const maxSize = 10 * 1024 * 1024; // 10MB
+			if (file.size > maxSize) {
+				toast.error('Image too large', {
+					description: 'Please select an image smaller than 10MB.',
+				});
+				return;
+			}
 			setFileName(file.name);
 			// Create preview URL
 			const url = URL.createObjectURL(file);
 			setPreviewUrl(url);
 			onImageChange(file);
+			toast.success('Image uploaded', {
+				description: `${file.name} has been successfully uploaded.`,
+			});
+		} else {
+			toast.error('Invalid file type', {
+				description: 'Please select a valid image file.',
+			});
 		}
 	};
 
@@ -70,11 +86,16 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 		if (fileInputRef.current) {
 			fileInputRef.current.value = '';
 		}
+		toast.info('Image removed', {
+			description: 'The image has been removed from your post.',
+		});
 	};
 
 	return (
 		<div className='space-y-2'>
-			<label className='text-base font-semibold'>Upload Image (Optional)</label>
+			<label className='text-base font-semibold'>
+				Upload Image (Optional)
+			</label>
 			<div
 				onDragEnter={handleDrag}
 				onDragLeave={handleDrag}
@@ -99,7 +120,9 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 				{fileName && previewUrl ? (
 					<div className='w-full space-y-3'>
 						<div className='flex items-center justify-between'>
-							<span className='text-sm font-medium'>{fileName}</span>
+							<span className='text-sm font-medium'>
+								{fileName}
+							</span>
 							<Button
 								type='button'
 								variant='ghost'
@@ -138,4 +161,3 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 		</div>
 	);
 }
-

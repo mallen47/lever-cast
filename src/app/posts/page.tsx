@@ -23,6 +23,7 @@ import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks';
 import { SEARCH_DEBOUNCE_MS } from '@/lib/constants';
+import { toast } from 'sonner';
 
 export default function PostsPage() {
 	const [posts, setPosts] = useState<Post[]>([]);
@@ -79,6 +80,9 @@ export default function PostsPage() {
 			setPosts(allPosts);
 		} catch (error) {
 			console.error('Failed to load posts:', error);
+			toast.error('Failed to load posts', {
+				description: 'Please try refreshing the page.',
+			});
 		} finally {
 			setIsLoading(false);
 		}
@@ -95,8 +99,14 @@ export default function PostsPage() {
 			await deletePost(postId);
 			// Remove from local state
 			setPosts((prev) => prev.filter((post) => post.id !== postId));
+			toast.success('Post deleted', {
+				description: 'The post has been successfully deleted.',
+			});
 		} catch (error) {
 			console.error('Failed to delete post:', error);
+			toast.error('Failed to delete post', {
+				description: 'Please try again later.',
+			});
 		}
 	};
 
@@ -111,8 +121,14 @@ export default function PostsPage() {
 						: post
 				)
 			);
+			toast.success('Post published', {
+				description: 'Your post has been successfully published.',
+			});
 		} catch (error) {
 			console.error('Failed to publish post:', error);
+			toast.error('Failed to publish post', {
+				description: 'Please try again later.',
+			});
 		}
 	};
 
