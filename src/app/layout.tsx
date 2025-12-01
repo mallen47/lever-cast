@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ClerkProvider } from '@clerk/nextjs';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/lib/providers/theme-provider';
@@ -26,15 +27,16 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang='en' suppressHydrationWarning>
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-				suppressHydrationWarning
-			>
-				{/* Blocking script to set theme before React hydrates - prevents hydration mismatch */}
-				<script
-					dangerouslySetInnerHTML={{
-						__html: `
+		<ClerkProvider>
+			<html lang='en' suppressHydrationWarning>
+				<body
+					className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+					suppressHydrationWarning
+				>
+					{/* Blocking script to set theme before React hydrates - prevents hydration mismatch */}
+					<script
+						dangerouslySetInnerHTML={{
+							__html: `
               (function() {
                 try {
                   var theme = localStorage.getItem('theme');
@@ -52,13 +54,14 @@ export default function RootLayout({
                 }
               })();
             `,
-					}}
-				/>
-				<ThemeProvider>
-					{children}
-					<Toaster />
-				</ThemeProvider>
-			</body>
-		</html>
+						}}
+					/>
+					<ThemeProvider>
+						{children}
+						<Toaster />
+					</ThemeProvider>
+				</body>
+			</html>
+		</ClerkProvider>
 	);
 }
