@@ -103,45 +103,6 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
           );
         })}
       </nav>
-
-      {/* Profile section */}
-      <div className="border-t border-sidebar-border p-4">
-        <div className="relative">
-          <button
-            onClick={() => setShowProfileMenu(!showProfileMenu)}
-            className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-              "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-              "focus:outline-none focus:ring-2 focus:ring-accent",
-              "text-sidebar-foreground"
-            )}
-            aria-label="Profile menu"
-          >
-            <User className="h-5 w-5 shrink-0" />
-            {!isCollapsed && (
-              <>
-                <span className="flex-1 text-left">Profile</span>
-                <span className="text-xs text-muted-foreground">▼</span>
-              </>
-            )}
-          </button>
-
-          {showProfileMenu && !isCollapsed && (
-            <div className="absolute bottom-full left-0 mb-2 w-full rounded-lg border border-sidebar-border bg-sidebar p-1 shadow-lg">
-              <button
-                onClick={() => {
-                  // Mock logout - just close menu for now
-                  setShowProfileMenu(false);
-                }}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
     </aside>
   );
 }
