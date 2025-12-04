@@ -1,0 +1,131 @@
+// Prisma Schema for LeverCast
+// Using Supabase PostgreSQL with connection pooling
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// =============================================================================
+// USER MODEL
+// =============================================================================
+// Synced with Clerk via webhooks. The `id` is our internal reference.
+// `clerkId` stores the Clerk user ID for webhook sync.
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  posts            Post[]
+  templates        Template[]
+  platformProfiles PlatformProfile[]
+
+  @@map("users")
+}
+
+// =============================================================================
+// PLATFORM PROFILE MODEL
+// =============================================================================
+// Stores platform-specific profile information (LinkedIn, X, etc.)
+
+model PlatformProfile {
+  id         String   @id @default(cuid())
+  userId     String
+  platform   Platform
+  handle     String?
+  headline   String?
+  profileUrl String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@map("platform_profiles")
+}
+
+// =============================================================================
+// POST MODEL
+// =============================================================================
+// Content posts that can be published to multiple platforms
+
+model Post {
+  id              String     @id @default(cuid())
+  userId          String
+  rawContent      String
+  platformContent Json       @default("{}")
+  templateId      String?
+  imageUrl        String?
+  status          PostStatus @default(DRAFT)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@map("posts")
+}
+
+// =============================================================================
+// TEMPLATE MODEL
+// =============================================================================
+// Reusable content templates for generating formatted posts
+
+model Template {
+  id              String            @id @default(cuid())
+  userId          String?
+  name            String
+  description     String
+  category        TemplateCategory?
+  platformSupport Platform[]        @default([])
+  isSystem        Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts Post[]
+
+  @@index([userId])
+  @@index([category])
+  @@map("templates")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum Platform {
+  LINKEDIN
+  X
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  FAILED
+}
+
+enum TemplateCategory {
+  BUSINESS
+  TIPS
+  NEWS
+  PERSONAL
+  MARKETING
+}
