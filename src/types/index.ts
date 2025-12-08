@@ -23,6 +23,8 @@ export {
 export {
   type Template,
   type TemplateCategory,
+  type TemplateFormData,
+  type PlatformPrompt,
 } from "./templates";
 
 // User types
