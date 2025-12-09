@@ -49,6 +49,9 @@ export async function createUser(data: CreateUserInput) {
 				name: data.name,
 				avatar: data.avatar,
 			},
+			include: {
+				platformProfiles: true,
+			},
 		});
 	} catch (error) {
 		if (error instanceof Prisma.PrismaClientKnownRequestError) {
