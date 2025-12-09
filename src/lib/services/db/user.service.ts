@@ -79,12 +79,18 @@ export async function getUserById(id: string) {
  * Find user by their Clerk ID
  */
 export async function getUserByClerkId(clerkId: string) {
-	return await prisma.user.findUnique({
-		where: { clerkId },
-		include: {
-			platformProfiles: true,
-		},
-	});
+	try {
+		const user = await prisma.user.findUnique({
+			where: { clerkId },
+			include: {
+				platformProfiles: true,
+			},
+		});
+		return user;
+	} catch (error) {
+		console.error('[DB] Error finding user by clerkId:', clerkId, error);
+		throw error;
+	}
 }
 
 /**

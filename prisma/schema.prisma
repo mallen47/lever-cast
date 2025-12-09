@@ -93,6 +93,7 @@ model Template {
   description     String
   category        TemplateCategory?
   platformSupport Platform[]        @default([])
+  platformPrompts Json              @default("[]") // Array of { platformId: string, prompt: string }
   isSystem        Boolean           @default(false)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt

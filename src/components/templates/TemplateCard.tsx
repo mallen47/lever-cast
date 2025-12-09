@@ -4,20 +4,33 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Sparkles } from 'lucide-react';
-import type { Template } from '@/types';
+import { Edit, Sparkles, Trash2 } from 'lucide-react';
+import type { Template, TemplateCategory } from '@/types';
+import { TEMPLATE_CATEGORY_LABELS } from '@/types/templates';
 import { getPlatformConfig } from '@/lib/platforms';
 import { cn } from '@/lib/utils';
 
 interface TemplateCardProps {
 	template: Template;
 	onEdit?: (template: Template) => void;
+	onDelete?: (template: Template) => void;
 	index?: number;
 }
 
-export function TemplateCard({ template, onEdit, index = 0 }: TemplateCardProps) {
+export function TemplateCard({ template, onEdit, onDelete, index = 0 }: TemplateCardProps) {
 	const handleEdit = () => {
 		onEdit?.(template);
+	};
+
+	const handleDelete = () => {
+		onDelete?.(template);
+	};
+
+	/**
+	 * Get the display label for a category
+	 */
+	const getCategoryLabel = (category: TemplateCategory): string => {
+		return TEMPLATE_CATEGORY_LABELS[category] ?? category;
 	};
 
 	return (
@@ -25,7 +38,7 @@ export function TemplateCard({ template, onEdit, index = 0 }: TemplateCardProps)
 			className={cn(
 				'group relative overflow-hidden transition-all duration-300 hover:shadow-lg',
 				'animate-in fade-in slide-in-from-bottom-4',
-				template.isDefault && 'border-accent/50 bg-gradient-to-br from-card to-accent/5'
+				template.isSystem && 'border-accent/50 bg-gradient-to-br from-card to-accent/5'
 			)}
 			style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'backwards' }}
 		>
@@ -39,10 +52,10 @@ export function TemplateCard({ template, onEdit, index = 0 }: TemplateCardProps)
 							<CardTitle className="text-lg font-semibold tracking-tight">
 								{template.name}
 							</CardTitle>
-							{template.isDefault && (
+							{template.isSystem && (
 								<Badge variant="secondary" className="gap-1 bg-accent/20 text-accent-foreground border-accent/30">
 									<Sparkles className="h-3 w-3" />
-									Default
+									System
 								</Badge>
 							)}
 						</div>
@@ -51,16 +64,29 @@ export function TemplateCard({ template, onEdit, index = 0 }: TemplateCardProps)
 						</CardDescription>
 					</div>
 					
-					{!template.isDefault && (
-						<Button
-							variant="ghost"
-							size="icon-sm"
-							onClick={handleEdit}
-							className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-							aria-label={`Edit ${template.name} template`}
-						>
-							<Edit className="h-4 w-4" />
-						</Button>
+					{!template.isSystem && (
+						<div className="flex items-center gap-1">
+							<Button
+								variant="ghost"
+								size="icon-sm"
+								onClick={handleEdit}
+								className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+								aria-label={`Edit ${template.name} template`}
+							>
+								<Edit className="h-4 w-4" />
+							</Button>
+							{onDelete && (
+								<Button
+									variant="ghost"
+									size="icon-sm"
+									onClick={handleDelete}
+									className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:text-destructive"
+									aria-label={`Delete ${template.name} template`}
+								>
+									<Trash2 className="h-4 w-4" />
+								</Button>
+							)}
+						</div>
 					)}
 				</div>
 			</CardHeader>
@@ -100,7 +126,7 @@ export function TemplateCard({ template, onEdit, index = 0 }: TemplateCardProps)
 				{template.category && (
 					<div className="pt-2">
 						<Badge variant="secondary" className="text-xs font-normal">
-							{template.category}
+							{getCategoryLabel(template.category)}
 						</Badge>
 					</div>
 				)}
