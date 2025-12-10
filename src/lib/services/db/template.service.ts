@@ -7,6 +7,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { Prisma, Platform, TemplateCategory } from '@prisma/client';
+import type { PlatformPrompt } from '@/lib/api/types';
 
 // =============================================================================
 // TYPES
@@ -18,6 +19,7 @@ export type CreateTemplateInput = {
 	description: string;
 	category?: TemplateCategory;
 	platformSupport?: Platform[];
+	platformPrompts?: PlatformPrompt[];
 	isSystem?: boolean;
 };
 
@@ -26,6 +28,7 @@ export type UpdateTemplateInput = {
 	description?: string;
 	category?: TemplateCategory | null;
 	platformSupport?: Platform[];
+	platformPrompts?: PlatformPrompt[];
 };
 
 export type GetTemplatesOptions = {
@@ -47,12 +50,18 @@ export type GetTemplatesOptions = {
 export async function createTemplate(data: CreateTemplateInput) {
 	return await prisma.template.create({
 		data: {
-			userId: data.userId,
 			name: data.name,
 			description: data.description,
 			category: data.category,
 			platformSupport: data.platformSupport ?? [],
+			// Cast to Prisma's JSON type (via unknown for TypeScript compatibility)
+			platformPrompts: (data.platformPrompts ??
+				[]) as unknown as Prisma.InputJsonValue,
 			isSystem: data.isSystem ?? false,
+			// Use relation connect syntax for userId
+			...(data.userId && {
+				user: { connect: { id: data.userId } },
+			}),
 		},
 	});
 }
@@ -172,6 +181,11 @@ export async function updateTemplate(id: string, data: UpdateTemplateInput) {
 				...(data.category !== undefined && { category: data.category }),
 				...(data.platformSupport !== undefined && {
 					platformSupport: data.platformSupport,
+				}),
+				...(data.platformPrompts !== undefined && {
+					// Cast to Prisma's JSON type (via unknown for TypeScript compatibility)
+					platformPrompts:
+						data.platformPrompts as unknown as Prisma.InputJsonValue,
 				}),
 			},
 		});

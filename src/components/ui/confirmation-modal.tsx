@@ -10,7 +10,7 @@ import {
 	DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 
 interface ConfirmationModalProps {
 	open: boolean;
@@ -21,6 +21,7 @@ interface ConfirmationModalProps {
 	cancelText?: string;
 	variant?: 'default' | 'destructive';
 	onConfirm: () => void;
+	isLoading?: boolean;
 }
 
 export function ConfirmationModal({
@@ -32,14 +33,14 @@ export function ConfirmationModal({
 	cancelText = 'Cancel',
 	variant = 'default',
 	onConfirm,
+	isLoading = false,
 }: ConfirmationModalProps) {
 	const handleConfirm = () => {
 		onConfirm();
-		onOpenChange(false);
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog open={open} onOpenChange={isLoading ? undefined : onOpenChange}>
 			<DialogContent className='sm:max-w-[425px]' showCloseButton={false}>
 				<DialogHeader>
 					<div className='flex items-center gap-3'>
@@ -60,13 +61,16 @@ export function ConfirmationModal({
 					<Button
 						variant='outline'
 						onClick={() => onOpenChange(false)}
+						disabled={isLoading}
 					>
 						{cancelText}
 					</Button>
 					<Button
 						variant={variant === 'destructive' ? 'destructive' : 'default'}
 						onClick={handleConfirm}
+						disabled={isLoading}
 					>
+						{isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
 						{confirmText}
 					</Button>
 				</DialogFooter>

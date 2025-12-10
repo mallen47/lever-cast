@@ -16,6 +16,8 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
 	globalForPrisma.prisma ??
 	new PrismaClient({
+		// Connection URL is configured in prisma.config.ts
+		// Prisma Client will read DATABASE_URL from environment variables
 		log:
 			process.env.NODE_ENV === 'development'
 				? ['query', 'error', 'warn']

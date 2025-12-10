@@ -5,32 +5,34 @@
 
 // Platform types
 export {
-  PLATFORMS,
-  type PlatformId,
-  type PlatformConfig,
-  isPlatformId,
-} from "./platforms";
+	PLATFORMS,
+	type PlatformId,
+	type PlatformConfig,
+	isPlatformId,
+} from './platforms';
 
 // Content types
 export {
-  type PlatformContent,
-  type Post,
-  type PostStatus,
-  type DraftPost,
-} from "./content";
+	type PlatformContent,
+	type Post,
+	type PostStatus,
+	type DraftPost,
+} from './content';
 
 // Template types
 export {
-  type Template,
-  type TemplateCategory,
-  type TemplateFormData,
-  type PlatformPrompt,
-} from "./templates";
+	type Template,
+	type TemplateCategory,
+	type TemplateFormData,
+	type PlatformPrompt,
+	TEMPLATE_CATEGORIES,
+	TEMPLATE_CATEGORY_LABELS,
+} from './templates';
 
 // User types
 export {
-  type User,
-  type UserPlatformProfiles,
-  type LinkedInProfile,
-  type XProfile,
-} from "./user";
+	type User,
+	type UserPlatformProfiles,
+	type LinkedInProfile,
+	type XProfile,
+} from './user';
