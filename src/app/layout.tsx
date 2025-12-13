@@ -3,6 +3,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/lib/providers/theme-provider';
+import { UnsavedChangesProvider } from '@/lib/providers/unsaved-changes-provider';
 import { Toaster } from '@/components/ui/toaster';
 
 const geistSans = Geist({
@@ -57,7 +58,9 @@ export default function RootLayout({
 						}}
 					/>
 					<ThemeProvider>
-						{children}
+						<UnsavedChangesProvider>
+							{children}
+						</UnsavedChangesProvider>
 						<Toaster />
 					</ThemeProvider>
 				</body>

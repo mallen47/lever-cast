@@ -77,27 +77,35 @@ This document captures the planned work for integrating posts with templates, in
 
 ---
 
-### Phase 3: Unsaved Changes Prompt
+### Phase 3: Unsaved Changes Prompt ✅ COMPLETED
 
 **Goal:** Prompt user to save draft if they navigate away with unsaved changes.
 
 **Behavior:**
 
 -   Track form "dirty" state (user has interacted with form)
--   On navigation attempt (route change, browser back, close tab):
-    -   If dirty, show confirmation: "Save as draft?"
-    -   Options: "Save Draft" | "Discard" | "Cancel"
+-   On navigation attempt (browser back, close tab, refresh, sidebar links):
+    -   If dirty, show confirmation dialog
+    -   Options: "Stay on Page" | "Discard Changes"
 
 **Implementation:**
 
--   Use `beforeunload` event for browser/tab close
--   Use Next.js router events for route changes
--   Track dirty state in form component
+-   Use `beforeunload` event for browser/tab close/refresh
+-   Use UnsavedChangesContext + NavLink for client-side navigation
+-   Track dirty state in usePostEditor hook (isDirty)
+-   Sync dirty state with context for cross-component awareness
+-   Mark form dirty when content or image is added
 
-**Files to modify:**
+**Files modified/created:**
 
--   `src/app/edit-post/page.tsx`
--   Possibly create `useUnsavedChangesWarning` hook
+-   `src/hooks/use-post-editor.ts` - Added `isDirty` state and `markClean` action
+-   `src/hooks/use-unsaved-changes-warning.ts` (new) - Hook for beforeunload handling
+-   `src/hooks/index.ts` - Export new hook
+-   `src/lib/providers/unsaved-changes-provider.tsx` (new) - Context + modal for client-side navigation
+-   `src/components/layout/NavLink.tsx` (new) - Link wrapper that checks for unsaved changes
+-   `src/components/layout/Sidebar.tsx` - Use NavLink instead of Link
+-   `src/app/layout.tsx` - Add UnsavedChangesProvider
+-   `src/app/edit-post/page.tsx` - Wire up unsaved changes warning + context sync
 
 ---
 

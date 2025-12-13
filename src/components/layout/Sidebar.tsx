@@ -1,19 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   FileEdit,
   History,
   Settings,
   LayoutTemplate,
-  User,
   Menu,
   X,
-  LogOut,
 } from "lucide-react";
-import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { NavLink } from "./NavLink";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -45,7 +42,6 @@ const navigationItems = [
 
 export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   return (
     <aside
@@ -85,7 +81,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
           const isActive = pathname === item.href;
 
           return (
-            <Link
+            <NavLink
               key={item.href}
               href={item.href}
               className={cn(
@@ -99,7 +95,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
             >
               <Icon className="h-5 w-5 shrink-0" />
               {!isCollapsed && <span>{item.name}</span>}
-            </Link>
+            </NavLink>
           );
         })}
       </nav>

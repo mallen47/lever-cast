@@ -10,7 +10,8 @@ import { PreviewContainer } from '@/components/content/PreviewContainer';
 import { TemplateSelector } from '@/components/content/TemplateSelector';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { usePostEditor } from '@/hooks';
+import { usePostEditor, useUnsavedChangesWarning } from '@/hooks';
+import { useUnsavedChanges } from '@/lib/providers/unsaved-changes-provider';
 import { toast } from 'sonner';
 import type { Template } from '@/types/templates';
 
@@ -24,12 +25,26 @@ export default function EditPostPage() {
 		imageUrl,
 		isGenerating,
 		error,
+		isDirty,
 		setRawContent,
 		setSelectedTemplate,
 		togglePlatform,
 		setPlatforms,
 		handleImageChange,
 	} = usePostEditor();
+
+	// Get the unsaved changes context for client-side navigation blocking
+	const { setIsDirty: setContextDirty } = useUnsavedChanges();
+
+	// Warn user if they try to leave with unsaved changes (browser-level)
+	useUnsavedChangesWarning(isDirty);
+
+	// Sync dirty state with context for client-side navigation blocking
+	useEffect(() => {
+		setContextDirty(isDirty);
+		// Cleanup: mark as clean when component unmounts
+		return () => setContextDirty(false);
+	}, [isDirty, setContextDirty]);
 
 	// Handle template selection - auto-populate platforms from template
 	const handleTemplateChange = useCallback(
