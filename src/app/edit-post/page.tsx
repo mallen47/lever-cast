@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ContentInput } from '@/components/content/ContentInput';
@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { usePostEditor } from '@/hooks';
 import { toast } from 'sonner';
+import type { Template } from '@/types/templates';
 
 export default function EditPostPage() {
 	const searchParams = useSearchParams();
@@ -26,8 +27,23 @@ export default function EditPostPage() {
 		setRawContent,
 		setSelectedTemplate,
 		togglePlatform,
+		setPlatforms,
 		handleImageChange,
 	} = usePostEditor();
+
+	// Handle template selection - auto-populate platforms from template
+	const handleTemplateChange = useCallback(
+		(template: Template | null) => {
+			if (template) {
+				// Auto-select platforms from the template
+				setPlatforms(template.platformSupport);
+			} else {
+				// Clear platforms if no template selected
+				setPlatforms([]);
+			}
+		},
+		[setPlatforms]
+	);
 
 	// Handle template query parameter
 	useEffect(() => {
@@ -62,6 +78,7 @@ export default function EditPostPage() {
 							<TemplateSelector
 								value={selectedTemplate}
 								onValueChange={setSelectedTemplate}
+								onTemplateChange={handleTemplateChange}
 							/>
 
 							<ImageUpload onImageChange={handleImageChange} />
@@ -74,6 +91,7 @@ export default function EditPostPage() {
 							<PlatformSelector
 								selectedPlatforms={selectedPlatforms}
 								onToggle={togglePlatform}
+								disabled={!selectedTemplate}
 							/>
 						</div>
 

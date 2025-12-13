@@ -29,6 +29,8 @@ interface UsePostEditorReturn {
 	setRawContent: (content: string) => void;
 	setSelectedTemplate: (templateId: string) => void;
 	togglePlatform: (platformId: PlatformId) => void;
+	/** Set all platforms at once (used for template auto-selection) */
+	setPlatforms: (platforms: PlatformId[]) => void;
 	handleImageChange: (file: File | null) => void;
 	clearError: () => void;
 	reset: () => void;
@@ -75,6 +77,10 @@ export function usePostEditor(
 				? prev.filter((id) => id !== platformId)
 				: [...prev, platformId];
 		});
+	}, []);
+
+	const setPlatforms = useCallback((platforms: PlatformId[]) => {
+		setSelectedPlatforms(platforms);
 	}, []);
 
 	const handleImageChange = useCallback((file: File | null) => {
@@ -138,7 +144,9 @@ export function usePostEditor(
 						});
 						// Remove content for platforms that are no longer selected
 						Object.keys(updated).forEach((key) => {
-							if (!selectedPlatforms.includes(key as PlatformId)) {
+							if (
+								!selectedPlatforms.includes(key as PlatformId)
+							) {
 								delete updated[key as PlatformId];
 							}
 						});
@@ -198,6 +206,7 @@ export function usePostEditor(
 		setRawContent,
 		setSelectedTemplate,
 		togglePlatform,
+		setPlatforms,
 		handleImageChange,
 		clearError,
 		reset,

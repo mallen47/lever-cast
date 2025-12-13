@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
 	Select,
 	SelectContent,
@@ -16,11 +16,14 @@ import type { Template } from '@/types/templates';
 interface TemplateSelectorProps {
 	value?: string;
 	onValueChange: (value: string) => void;
+	/** Called when template selection changes with the full template object (or null if cleared) */
+	onTemplateChange?: (template: Template | null) => void;
 }
 
 export function TemplateSelector({
 	value,
 	onValueChange,
+	onTemplateChange,
 }: TemplateSelectorProps) {
 	const [templates, setTemplates] = useState<Template[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -44,14 +47,43 @@ export function TemplateSelector({
 		loadTemplates();
 	}, []);
 
+	const handleValueChange = useCallback(
+		(newValue: string) => {
+			onValueChange(newValue);
+
+			// Find and pass the full template object
+			if (onTemplateChange) {
+				const selectedTemplate = templates.find(
+					(t) => t.id === newValue
+				);
+				onTemplateChange(selectedTemplate ?? null);
+			}
+		},
+		[onValueChange, onTemplateChange, templates]
+	);
+
+	// Sync template data when value changes externally (e.g., from URL param)
+	useEffect(() => {
+		if (value && templates.length > 0 && onTemplateChange) {
+			const selectedTemplate = templates.find((t) => t.id === value);
+			if (selectedTemplate) {
+				onTemplateChange(selectedTemplate);
+			}
+		}
+	}, [value, templates, onTemplateChange]);
+
 	if (error) {
 		return (
 			<div className='space-y-2'>
-				<Label className='text-base font-semibold'>Select Template</Label>
+				<Label className='text-base font-semibold'>
+					Select Template
+				</Label>
 				<p className='text-sm text-destructive'>{error}</p>
 			</div>
 		);
 	}
+
+	const hasTemplates = templates.length > 0;
 
 	return (
 		<div className='space-y-2'>
@@ -61,15 +93,23 @@ export function TemplateSelector({
 			>
 				Select Template
 			</Label>
-			<Select value={value} onValueChange={onValueChange} disabled={isLoading}>
+			<Select
+				value={value}
+				onValueChange={handleValueChange}
+				disabled={isLoading || !hasTemplates}
+			>
 				<SelectTrigger id='template-select' className='w-full'>
 					{isLoading ? (
 						<div className='flex items-center gap-2'>
 							<Loader2 className='h-4 w-4 animate-spin' />
 							<span>Loading templates...</span>
 						</div>
+					) : !hasTemplates ? (
+						<span className='text-muted-foreground'>
+							No templates available
+						</span>
 					) : (
-						<SelectValue placeholder='Choose a template (optional)' />
+						<SelectValue placeholder='Choose a template' />
 					)}
 				</SelectTrigger>
 				<SelectContent>
@@ -87,6 +127,11 @@ export function TemplateSelector({
 					))}
 				</SelectContent>
 			</Select>
+			{!isLoading && !hasTemplates && (
+				<p className='text-xs text-muted-foreground'>
+					Create a template first to start posting.
+				</p>
+			)}
 		</div>
 	);
 }
