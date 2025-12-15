@@ -24,14 +24,20 @@ interface UsePostEditorReturn {
 	imageUrl: string | undefined;
 	isGenerating: boolean;
 	error: string | null;
+	/** Whether the form has unsaved changes */
+	isDirty: boolean;
 
 	// Actions
 	setRawContent: (content: string) => void;
 	setSelectedTemplate: (templateId: string) => void;
 	togglePlatform: (platformId: PlatformId) => void;
+	/** Set all platforms at once (used for template auto-selection) */
+	setPlatforms: (platforms: PlatformId[]) => void;
 	handleImageChange: (file: File | null) => void;
 	clearError: () => void;
 	reset: () => void;
+	/** Mark the form as clean (after saving) */
+	markClean: () => void;
 }
 
 /**
@@ -41,18 +47,38 @@ interface UsePostEditorReturn {
 export function usePostEditor(
 	options?: UsePostEditorOptions
 ): UsePostEditorReturn {
-	const [rawContent, setRawContent] = useState(options?.initialContent ?? '');
+	const [rawContent, setRawContentInternal] = useState(
+		options?.initialContent ?? ''
+	);
 	const [platformContent, setPlatformContent] = useState<PlatformContent>({});
 	const [selectedPlatforms, setSelectedPlatforms] = useState<PlatformId[]>(
 		options?.initialPlatforms ?? []
 	);
-	const [selectedTemplate, setSelectedTemplate] = useState('');
+	const [selectedTemplate, setSelectedTemplateInternal] = useState('');
 	const [imageUrl, setImageUrl] = useState<string | undefined>();
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [isDirty, setIsDirty] = useState(false);
 
 	// Use ref to track the current image URL for cleanup
 	const imageUrlRef = useRef<string | undefined>(undefined);
+
+	// Wrapped setters that mark form as dirty
+	const setRawContent = useCallback((content: string) => {
+		setRawContentInternal(content);
+		if (content.trim()) {
+			setIsDirty(true);
+		}
+	}, []);
+
+	const setSelectedTemplate = useCallback((templateId: string) => {
+		setSelectedTemplateInternal(templateId);
+		// Don't mark dirty just for template selection - it's part of setup
+	}, []);
+
+	const markClean = useCallback(() => {
+		setIsDirty(false);
+	}, []);
 
 	// Update ref whenever imageUrl changes
 	useEffect(() => {
@@ -77,6 +103,10 @@ export function usePostEditor(
 		});
 	}, []);
 
+	const setPlatforms = useCallback((platforms: PlatformId[]) => {
+		setSelectedPlatforms(platforms);
+	}, []);
+
 	const handleImageChange = useCallback((file: File | null) => {
 		// Clean up previous URL to prevent memory leak
 		if (imageUrlRef.current) {
@@ -86,6 +116,7 @@ export function usePostEditor(
 		if (file) {
 			const newUrl = URL.createObjectURL(file);
 			setImageUrl(newUrl);
+			setIsDirty(true);
 		} else {
 			setImageUrl(undefined);
 		}
@@ -138,7 +169,9 @@ export function usePostEditor(
 						});
 						// Remove content for platforms that are no longer selected
 						Object.keys(updated).forEach((key) => {
-							if (!selectedPlatforms.includes(key as PlatformId)) {
+							if (
+								!selectedPlatforms.includes(key as PlatformId)
+							) {
 								delete updated[key as PlatformId];
 							}
 						});
@@ -175,13 +208,14 @@ export function usePostEditor(
 			URL.revokeObjectURL(imageUrlRef.current);
 		}
 
-		setRawContent(options?.initialContent ?? '');
+		setRawContentInternal(options?.initialContent ?? '');
 		setPlatformContent({});
 		setSelectedPlatforms(options?.initialPlatforms ?? []);
-		setSelectedTemplate('');
+		setSelectedTemplateInternal('');
 		setImageUrl(undefined);
 		setIsGenerating(false);
 		setError(null);
+		setIsDirty(false);
 	}, [options?.initialContent, options?.initialPlatforms]);
 
 	return {
@@ -193,13 +227,16 @@ export function usePostEditor(
 		imageUrl,
 		isGenerating,
 		error,
+		isDirty,
 
 		// Actions
 		setRawContent,
 		setSelectedTemplate,
 		togglePlatform,
+		setPlatforms,
 		handleImageChange,
 		clearError,
 		reset,
+		markClean,
 	};
 }

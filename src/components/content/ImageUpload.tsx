@@ -70,7 +70,6 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 	};
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		e.preventDefault();
 		if (e.target.files && e.target.files[0]) {
 			handleFile(e.target.files[0]);
 		}
@@ -114,7 +113,7 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 					type='file'
 					accept='image/*'
 					onChange={handleChange}
-					className='hidden'
+					className='sr-only'
 					id='image-upload'
 				/>
 				{fileName && previewUrl ? (
@@ -142,20 +141,23 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 						</div>
 					</div>
 				) : (
-					<>
+					<div
+						className='flex cursor-pointer flex-col items-center w-full'
+						onClick={() => {
+							// Directly trigger file input click
+							if (fileInputRef.current) {
+								fileInputRef.current.click();
+							}
+						}}
+					>
 						<Upload className='mb-4 h-8 w-8 text-muted-foreground' />
 						<p className='mb-4 text-sm font-medium'>
 							Drag and drop an image here, or click to select
 						</p>
-						<Button
-							type='button'
-							variant='outline'
-							size='sm'
-							onClick={() => fileInputRef.current?.click()}
-						>
+						<span className='inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'>
 							Select Image
-						</Button>
-					</>
+						</span>
+					</div>
 				)}
 			</div>
 		</div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ContentInput } from '@/components/content/ContentInput';
@@ -10,8 +10,10 @@ import { PreviewContainer } from '@/components/content/PreviewContainer';
 import { TemplateSelector } from '@/components/content/TemplateSelector';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { usePostEditor } from '@/hooks';
+import { usePostEditor, useUnsavedChangesWarning } from '@/hooks';
+import { useUnsavedChanges } from '@/lib/providers/unsaved-changes-provider';
 import { toast } from 'sonner';
+import type { Template } from '@/types/templates';
 
 export default function EditPostPage() {
 	const searchParams = useSearchParams();
@@ -23,11 +25,40 @@ export default function EditPostPage() {
 		imageUrl,
 		isGenerating,
 		error,
+		isDirty,
 		setRawContent,
 		setSelectedTemplate,
 		togglePlatform,
+		setPlatforms,
 		handleImageChange,
 	} = usePostEditor();
+
+	// Get the unsaved changes context for client-side navigation blocking
+	const { setIsDirty: setContextDirty } = useUnsavedChanges();
+
+	// Warn user if they try to leave with unsaved changes (browser-level)
+	useUnsavedChangesWarning(isDirty);
+
+	// Sync dirty state with context for client-side navigation blocking
+	useEffect(() => {
+		setContextDirty(isDirty);
+		// Cleanup: mark as clean when component unmounts
+		return () => setContextDirty(false);
+	}, [isDirty, setContextDirty]);
+
+	// Handle template selection - auto-populate platforms from template
+	const handleTemplateChange = useCallback(
+		(template: Template | null) => {
+			if (template) {
+				// Auto-select platforms from the template
+				setPlatforms(template.platformSupport);
+			} else {
+				// Clear platforms if no template selected
+				setPlatforms([]);
+			}
+		},
+		[setPlatforms]
+	);
 
 	// Handle template query parameter
 	useEffect(() => {
@@ -62,6 +93,7 @@ export default function EditPostPage() {
 							<TemplateSelector
 								value={selectedTemplate}
 								onValueChange={setSelectedTemplate}
+								onTemplateChange={handleTemplateChange}
 							/>
 
 							<ImageUpload onImageChange={handleImageChange} />
@@ -74,6 +106,7 @@ export default function EditPostPage() {
 							<PlatformSelector
 								selectedPlatforms={selectedPlatforms}
 								onToggle={togglePlatform}
+								disabled={!selectedTemplate}
 							/>
 						</div>
 
