@@ -102,33 +102,35 @@ export function UnsavedChangesProvider({
 		<UnsavedChangesContext.Provider value={value}>
 			{children}
 
-			{/* Unsaved Changes Confirmation Modal */}
-			<Dialog open={showModal} onOpenChange={setShowModal}>
-				<DialogContent className='sm:max-w-[425px]' showCloseButton={false}>
-					<DialogHeader>
-						<div className='flex items-center gap-3'>
-							<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10'>
-								<AlertTriangle className='h-5 w-5 text-amber-500' />
+			{/* Unsaved Changes Confirmation Modal - only render when needed */}
+			{showModal && (
+				<Dialog open={showModal} onOpenChange={setShowModal}>
+					<DialogContent className='sm:max-w-[425px]' showCloseButton={false}>
+						<DialogHeader>
+							<div className='flex items-center gap-3'>
+								<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10'>
+									<AlertTriangle className='h-5 w-5 text-amber-500' />
+								</div>
+								<div className='flex-1'>
+									<DialogTitle>Unsaved Changes</DialogTitle>
+									<DialogDescription className='mt-2'>
+										You have unsaved changes that will be lost if
+										you leave this page.
+									</DialogDescription>
+								</div>
 							</div>
-							<div className='flex-1'>
-								<DialogTitle>Unsaved Changes</DialogTitle>
-								<DialogDescription className='mt-2'>
-									You have unsaved changes that will be lost if
-									you leave this page.
-								</DialogDescription>
-							</div>
-						</div>
-					</DialogHeader>
-					<DialogFooter className='gap-3'>
-						<Button variant='outline' onClick={handleCancel}>
-							Stay on Page
-						</Button>
-						<Button variant='destructive' onClick={handleDiscard}>
-							Discard Changes
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+						</DialogHeader>
+						<DialogFooter className='gap-3'>
+							<Button variant='outline' onClick={handleCancel}>
+								Stay on Page
+							</Button>
+							<Button variant='destructive' onClick={handleDiscard}>
+								Discard Changes
+							</Button>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
+			)}
 		</UnsavedChangesContext.Provider>
 	);
 }
