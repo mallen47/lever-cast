@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { useEffect, useCallback, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ContentInput } from '@/components/content/ContentInput';
 import { ImageUpload } from '@/components/content/ImageUpload';
@@ -12,11 +12,19 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { usePostEditor, useUnsavedChangesWarning } from '@/hooks';
 import { useUnsavedChanges } from '@/lib/providers/unsaved-changes-provider';
+import { createPost, publishPost, uploadPostImage } from '@/lib/services';
 import { toast } from 'sonner';
 import type { Template } from '@/types/templates';
 
 export default function EditPostPage() {
 	const searchParams = useSearchParams();
+	const router = useRouter();
+	const [isSaving, setIsSaving] = useState(false);
+	const [isPublishing, setIsPublishing] = useState(false);
+	const [savedPostId, setSavedPostId] = useState<string | null>(null);
+	const [autoSaveTimeout, setAutoSaveTimeout] =
+		useState<NodeJS.Timeout | null>(null);
+
 	const {
 		rawContent,
 		platformContent,
@@ -31,10 +39,12 @@ export default function EditPostPage() {
 		togglePlatform,
 		setPlatforms,
 		handleImageChange,
+		markClean,
 	} = usePostEditor();
 
 	// Get the unsaved changes context for client-side navigation blocking
-	const { setIsDirty: setContextDirty } = useUnsavedChanges();
+	const { setIsDirty: setContextDirty, markClean: markContextClean } =
+		useUnsavedChanges();
 
 	// Warn user if they try to leave with unsaved changes (browser-level)
 	useUnsavedChangesWarning(isDirty);
@@ -45,6 +55,50 @@ export default function EditPostPage() {
 		// Cleanup: mark as clean when component unmounts
 		return () => setContextDirty(false);
 	}, [isDirty, setContextDirty]);
+
+	// Auto-save functionality (debounced) - only if we have a saved post
+	useEffect(() => {
+		if (!isDirty || !savedPostId || isSaving) {
+			return;
+		}
+
+		// Clear existing timeout
+		if (autoSaveTimeout) {
+			clearTimeout(autoSaveTimeout);
+		}
+
+		// Set new timeout for auto-save (30 seconds after last change)
+		const timeout = setTimeout(async () => {
+			await handleSaveDraft(true); // true = isAutoSave
+		}, 30000);
+
+		setAutoSaveTimeout(timeout);
+
+		return () => {
+			if (timeout) {
+				clearTimeout(timeout);
+			}
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [
+		isDirty,
+		savedPostId,
+		isSaving,
+		rawContent,
+		platformContent,
+		selectedPlatforms,
+		selectedTemplate,
+		imageUrl,
+	]);
+
+	// Cleanup timeout on unmount
+	useEffect(() => {
+		return () => {
+			if (autoSaveTimeout) {
+				clearTimeout(autoSaveTimeout);
+			}
+		};
+	}, [autoSaveTimeout]);
 
 	// Handle template selection - auto-populate platforms from template
 	const handleTemplateChange = useCallback(
@@ -67,6 +121,159 @@ export default function EditPostPage() {
 			setSelectedTemplate(templateId);
 		}
 	}, [searchParams, selectedTemplate, setSelectedTemplate]);
+
+	// Handle save draft (manual or auto-save)
+	const handleSaveDraft = useCallback(
+		async (isAutoSave = false) => {
+			if (isSaving) return;
+
+			try {
+				setIsSaving(true);
+
+				// If we already have a saved post, update it
+				if (savedPostId) {
+					const { updatePost } = await import('@/lib/services');
+					await updatePost(savedPostId, {
+						rawContent,
+						platformContent,
+						templateId: selectedTemplate || null,
+						imageUrl: imageUrl || null,
+						status: 'draft',
+					});
+				} else {
+					// Otherwise, create a new draft
+					const newPost = await createPost({
+						rawContent,
+						platformContent,
+						templateId: selectedTemplate,
+						imageUrl: imageUrl,
+						status: 'draft',
+					});
+					setSavedPostId(newPost.id);
+				}
+
+				markClean();
+				markContextClean();
+
+				if (!isAutoSave) {
+					toast.success('Draft saved', {
+						description: 'Your changes have been saved.',
+					});
+				}
+			} catch (error) {
+				console.error('Failed to save draft:', error);
+				toast.error('Failed to save draft', {
+					description:
+						error instanceof Error
+							? error.message
+							: 'Please try again.',
+				});
+			} finally {
+				setIsSaving(false);
+			}
+		},
+		[
+			savedPostId,
+			rawContent,
+			platformContent,
+			selectedTemplate,
+			imageUrl,
+			isSaving,
+			markClean,
+			markContextClean,
+		]
+	);
+
+	// Handle publish
+	const handlePublish = useCallback(async () => {
+		if (isPublishing) return;
+
+		try {
+			setIsPublishing(true);
+
+			let postId = savedPostId;
+
+			// If no saved post yet, create one first
+			if (!postId) {
+				const newPost = await createPost({
+					rawContent,
+					platformContent,
+					templateId: selectedTemplate,
+					imageUrl: imageUrl,
+					status: 'draft',
+				});
+				postId = newPost.id;
+				setSavedPostId(postId);
+			} else if (isDirty) {
+				// Save as draft first if there are unsaved changes
+				await handleSaveDraft(true);
+			}
+
+			// Then publish
+			await publishPost(postId);
+
+			markClean();
+			markContextClean();
+
+			toast.success('Post published', {
+				description: `Your post has been published to ${
+					selectedPlatforms.length
+				} platform${selectedPlatforms.length > 1 ? 's' : ''}.`,
+			});
+
+			// Redirect to posts page
+			router.push('/posts');
+		} catch (error) {
+			console.error('Failed to publish post:', error);
+			toast.error('Failed to publish post', {
+				description:
+					error instanceof Error
+						? error.message
+						: 'Please try again.',
+			});
+		} finally {
+			setIsPublishing(false);
+		}
+	}, [
+		savedPostId,
+		isDirty,
+		rawContent,
+		platformContent,
+		selectedTemplate,
+		imageUrl,
+		selectedPlatforms.length,
+		isPublishing,
+		handleSaveDraft,
+		markClean,
+		markContextClean,
+		router,
+	]);
+
+	// Handle image upload - if we have a saved post, upload immediately
+	const handleImageUpload = useCallback(
+		async (file: File | null) => {
+			handleImageChange(file);
+
+			// If we have a saved post, upload the image immediately
+			if (file && savedPostId) {
+				try {
+					await uploadPostImage(savedPostId, file);
+					toast.success('Image uploaded', {
+						description: 'Your image has been uploaded and saved.',
+					});
+				} catch (error) {
+					console.error('Failed to upload image:', error);
+					toast.error('Failed to upload image', {
+						description:
+							error instanceof Error
+								? error.message
+								: 'Please try again.',
+					});
+				}
+			}
+		},
+		[savedPostId, handleImageChange]
+	);
 
 	// Show toast notification when error occurs
 	useEffect(() => {
@@ -96,7 +303,7 @@ export default function EditPostPage() {
 								onTemplateChange={handleTemplateChange}
 							/>
 
-							<ImageUpload onImageChange={handleImageChange} />
+							<ImageUpload onImageChange={handleImageUpload} />
 
 							<ContentInput
 								value={rawContent}
@@ -127,36 +334,38 @@ export default function EditPostPage() {
 							</Card>
 						)}
 
-						{/* Publish Button */}
-						{selectedPlatforms.length > 0 && rawContent.trim() && (
-							<div className='flex justify-end'>
+						{/* Action Buttons */}
+						<div className='flex justify-end gap-3'>
+							{(rawContent.trim() ||
+								selectedPlatforms.length > 0) && (
 								<Button
-									onClick={() => {
-										// TODO: Implement publish functionality
-										console.log('Publishing post...', {
-											rawContent,
-											platformContent,
-											selectedPlatforms,
-											selectedTemplate,
-											imageUrl,
-										});
-										toast.success('Post published', {
-											description: `Your post has been published to ${
-												selectedPlatforms.length
-											} platform${
-												selectedPlatforms.length > 1
-													? 's'
-													: ''
-											}.`,
-										});
-									}}
-									disabled={isGenerating}
+									onClick={() => handleSaveDraft(false)}
+									disabled={
+										!isDirty || isSaving || isPublishing
+									}
+									variant='outline'
 									size='lg'
 								>
-									Publish
+									{isSaving ? 'Saving...' : 'Save Draft'}
 								</Button>
-							</div>
-						)}
+							)}
+							{selectedPlatforms.length > 0 &&
+								rawContent.trim() && (
+									<Button
+										onClick={handlePublish}
+										disabled={
+											isGenerating ||
+											isPublishing ||
+											isSaving
+										}
+										size='lg'
+									>
+										{isPublishing
+											? 'Publishing...'
+											: 'Publish'}
+									</Button>
+								)}
+						</div>
 					</div>
 				</Card>
 			</div>
