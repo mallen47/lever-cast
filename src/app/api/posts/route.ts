@@ -51,7 +51,9 @@ function toPostResponse(post: {
  * Validate post status
  */
 function isValidStatus(value: string): value is PostStatus {
-	return Object.values(PostStatus).includes(value.toUpperCase() as PostStatus);
+	return Object.values(PostStatus).includes(
+		value.toUpperCase() as PostStatus
+	);
 }
 
 // =============================================================================
@@ -71,7 +73,9 @@ export async function GET(request: Request) {
 		const status = searchParams.get('status');
 		const skip = parseInt(searchParams.get('skip') || '0', 10);
 		const take = parseInt(searchParams.get('take') || '20', 10);
-		const orderBy = (searchParams.get('orderBy') || 'createdAt') as 'createdAt' | 'updatedAt';
+		const orderBy = (searchParams.get('orderBy') || 'createdAt') as
+			| 'createdAt'
+			| 'updatedAt';
 		const order = (searchParams.get('order') || 'desc') as 'asc' | 'desc';
 
 		// Validate status if provided
@@ -169,4 +173,3 @@ export async function POST(request: Request) {
 		return internalErrorResponse('Failed to create post');
 	}
 }
-

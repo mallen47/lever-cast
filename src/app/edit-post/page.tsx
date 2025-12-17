@@ -39,6 +39,7 @@ export default function EditPostPage() {
 		togglePlatform,
 		setPlatforms,
 		handleImageChange,
+		setImageUrl,
 		markClean,
 	} = usePostEditor();
 
@@ -252,12 +253,19 @@ export default function EditPostPage() {
 	// Handle image upload - if we have a saved post, upload immediately
 	const handleImageUpload = useCallback(
 		async (file: File | null) => {
+			// Always update local preview (blob URL) for immediate feedback
 			handleImageChange(file);
 
-			// If we have a saved post, upload the image immediately
-			if (file && savedPostId) {
+			if (!file) {
+				setImageUrl(undefined);
+				return;
+			}
+
+			// If we have a saved post, upload to server and use returned data URL
+			if (savedPostId) {
 				try {
-					await uploadPostImage(savedPostId, file);
+					const result = await uploadPostImage(savedPostId, file);
+					setImageUrl(result.imageUrl);
 					toast.success('Image uploaded', {
 						description: 'Your image has been uploaded and saved.',
 					});
@@ -270,9 +278,32 @@ export default function EditPostPage() {
 								: 'Please try again.',
 					});
 				}
+				return;
+			}
+
+			// For unsaved posts, convert to data URL so it persists when saving draft
+			const fileToDataUrl = (f: File) =>
+				new Promise<string>((resolve, reject) => {
+					const reader = new FileReader();
+					reader.onload = () => resolve(reader.result as string);
+					reader.onerror = () => reject(reader.error);
+					reader.readAsDataURL(f);
+				});
+
+			try {
+				const dataUrl = await fileToDataUrl(file);
+				setImageUrl(dataUrl);
+			} catch (error) {
+				console.error('Failed to read image:', error);
+				toast.error('Failed to read image', {
+					description:
+						error instanceof Error
+							? error.message
+							: 'Please try again.',
+				});
 			}
 		},
-		[savedPostId, handleImageChange]
+		[savedPostId, handleImageChange, setImageUrl]
 	);
 
 	// Show toast notification when error occurs

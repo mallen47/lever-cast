@@ -15,7 +15,12 @@ interface PostsListResponse {
 /**
  * Transform API post response (with string dates) to Post type (with Date objects)
  */
-function transformPost(post: Omit<Post, 'createdAt' | 'updatedAt'> & { createdAt: string; updatedAt: string }): Post {
+function transformPost(
+	post: Omit<Post, 'createdAt' | 'updatedAt'> & {
+		createdAt: string;
+		updatedAt: string;
+	}
+): Post {
 	return {
 		...post,
 		createdAt: new Date(post.createdAt),
@@ -35,7 +40,9 @@ export async function fetchPosts(): Promise<Post[]> {
 	});
 
 	if (!response.ok) {
-		const error = await response.json().catch(() => ({ error: { message: 'Failed to fetch posts' } }));
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to fetch posts' } }));
 		throw new Error(error.error?.message || 'Failed to fetch posts');
 	}
 
@@ -55,7 +62,9 @@ export async function fetchPostsByStatus(status: PostStatus): Promise<Post[]> {
 	});
 
 	if (!response.ok) {
-		const error = await response.json().catch(() => ({ error: { message: 'Failed to fetch posts' } }));
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to fetch posts' } }));
 		throw new Error(error.error?.message || 'Failed to fetch posts');
 	}
 
@@ -78,7 +87,9 @@ export async function fetchPostById(id: string): Promise<Post | undefined> {
 		if (response.status === 404) {
 			return undefined;
 		}
-		const error = await response.json().catch(() => ({ error: { message: 'Failed to fetch post' } }));
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to fetch post' } }));
 		throw new Error(error.error?.message || 'Failed to fetch post');
 	}
 
@@ -128,7 +139,9 @@ export async function createPost(data: {
 	});
 
 	if (!response.ok) {
-		const error = await response.json().catch(() => ({ error: { message: 'Failed to create post' } }));
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to create post' } }));
 		throw new Error(error.error?.message || 'Failed to create post');
 	}
 
@@ -139,13 +152,16 @@ export async function createPost(data: {
 /**
  * Update a post
  */
-export async function updatePost(id: string, data: {
-	rawContent?: string;
-	platformContent?: Record<string, string>;
-	templateId?: string | null;
-	imageUrl?: string | null;
-	status?: PostStatus;
-}): Promise<Post> {
+export async function updatePost(
+	id: string,
+	data: {
+		rawContent?: string;
+		platformContent?: Record<string, string>;
+		templateId?: string | null;
+		imageUrl?: string | null;
+		status?: PostStatus;
+	}
+): Promise<Post> {
 	const response = await fetch(`/api/posts/${id}`, {
 		method: 'PUT',
 		headers: {
@@ -155,7 +171,9 @@ export async function updatePost(id: string, data: {
 	});
 
 	if (!response.ok) {
-		const error = await response.json().catch(() => ({ error: { message: 'Failed to update post' } }));
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to update post' } }));
 		throw new Error(error.error?.message || 'Failed to update post');
 	}
 
@@ -172,7 +190,9 @@ export async function deletePost(id: string): Promise<void> {
 	});
 
 	if (!response.ok) {
-		const error = await response.json().catch(() => ({ error: { message: 'Failed to delete post' } }));
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to delete post' } }));
 		throw new Error(error.error?.message || 'Failed to delete post');
 	}
 }
@@ -187,19 +207,25 @@ export async function publishPost(id: string): Promise<Post> {
 /**
  * Save draft (updates status to draft)
  */
-export async function saveDraft(id: string, data: {
-	rawContent?: string;
-	platformContent?: Record<string, string>;
-	templateId?: string | null;
-	imageUrl?: string | null;
-}): Promise<Post> {
+export async function saveDraft(
+	id: string,
+	data: {
+		rawContent?: string;
+		platformContent?: Record<string, string>;
+		templateId?: string | null;
+		imageUrl?: string | null;
+	}
+): Promise<Post> {
 	return updatePost(id, { ...data, status: 'draft' });
 }
 
 /**
  * Upload image for a post
  */
-export async function uploadPostImage(postId: string, file: File): Promise<{ imageUrl: string }> {
+export async function uploadPostImage(
+	postId: string,
+	file: File
+): Promise<{ imageUrl: string }> {
 	const formData = new FormData();
 	formData.append('image', file);
 
@@ -209,7 +235,9 @@ export async function uploadPostImage(postId: string, file: File): Promise<{ ima
 	});
 
 	if (!response.ok) {
-		const error = await response.json().catch(() => ({ error: { message: 'Failed to upload image' } }));
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to upload image' } }));
 		throw new Error(error.error?.message || 'Failed to upload image');
 	}
 

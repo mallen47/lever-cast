@@ -58,7 +58,9 @@ function toPostResponse(post: {
  * Validate post status
  */
 function isValidStatus(value: string): value is PostStatus {
-	return Object.values(PostStatus).includes(value.toUpperCase() as PostStatus);
+	return Object.values(PostStatus).includes(
+		value.toUpperCase() as PostStatus
+	);
 }
 
 interface RouteParams {
@@ -229,4 +231,3 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 		return internalErrorResponse('Failed to delete post');
 	}
 }
-

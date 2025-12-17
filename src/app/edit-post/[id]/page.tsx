@@ -31,7 +31,8 @@ export default function EditPostPage() {
 	const [post, setPost] = useState<Post | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isPublishing, setIsPublishing] = useState(false);
-	const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+	const [autoSaveTimeout, setAutoSaveTimeout] =
+		useState<NodeJS.Timeout | null>(null);
 
 	const {
 		rawContent,
@@ -51,12 +52,15 @@ export default function EditPostPage() {
 		markClean,
 	} = usePostEditor({
 		initialContent: post?.rawContent || '',
-		initialPlatforms: post ? Object.keys(post.platformContent) as typeof selectedPlatforms : [],
+		initialPlatforms: post
+			? (Object.keys(post.platformContent) as typeof selectedPlatforms)
+			: [],
 		initialImageUrl: post?.imageUrl,
 	});
 
 	// Get the unsaved changes context for client-side navigation blocking
-	const { setIsDirty: setContextDirty, markClean: markContextClean } = useUnsavedChanges();
+	const { setIsDirty: setContextDirty, markClean: markContextClean } =
+		useUnsavedChanges();
 
 	// Warn user if they try to leave with unsaved changes (browser-level)
 	useUnsavedChangesWarning(isDirty);
@@ -78,21 +82,29 @@ export default function EditPostPage() {
 					setPost(postData);
 					setRawContent(postData.rawContent);
 					setSelectedTemplate(postData.templateId || '');
-					setPlatforms(Object.keys(postData.platformContent) as typeof selectedPlatforms);
+					setPlatforms(
+						Object.keys(
+							postData.platformContent
+						) as typeof selectedPlatforms
+					);
 					// Set image URL if it exists
 					if (postData.imageUrl) {
 						setImageUrl(postData.imageUrl);
 					}
 				} else {
 					toast.error('Post not found', {
-						description: 'The post you are trying to edit does not exist.',
+						description:
+							'The post you are trying to edit does not exist.',
 					});
 					router.push('/posts');
 				}
 			} catch (error) {
 				console.error('Failed to load post:', error);
 				toast.error('Failed to load post', {
-					description: error instanceof Error ? error.message : 'Please try again.',
+					description:
+						error instanceof Error
+							? error.message
+							: 'Please try again.',
 				});
 				router.push('/posts');
 			} finally {
@@ -103,7 +115,14 @@ export default function EditPostPage() {
 		if (postId) {
 			loadPost();
 		}
-	}, [postId, router, setRawContent, setSelectedTemplate, setPlatforms, setImageUrl]);
+	}, [
+		postId,
+		router,
+		setRawContent,
+		setSelectedTemplate,
+		setPlatforms,
+		setImageUrl,
+	]);
 
 	// Auto-save functionality (debounced)
 	useEffect(() => {
@@ -129,7 +148,17 @@ export default function EditPostPage() {
 			}
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isDirty, postId, isLoading, isSaving, rawContent, platformContent, selectedPlatforms, selectedTemplate, imageUrl]);
+	}, [
+		isDirty,
+		postId,
+		isLoading,
+		isSaving,
+		rawContent,
+		platformContent,
+		selectedPlatforms,
+		selectedTemplate,
+		imageUrl,
+	]);
 
 	// Cleanup timeout on unmount
 	useEffect(() => {
@@ -153,48 +182,64 @@ export default function EditPostPage() {
 	);
 
 	// Handle save draft (manual or auto-save)
-	const handleSaveDraft = useCallback(async (isAutoSave = false) => {
-		if (!postId || isSaving) return;
+	const handleSaveDraft = useCallback(
+		async (isAutoSave = false) => {
+			if (!postId || isSaving) return;
 
-		try {
-			setIsSaving(true);
+			try {
+				setIsSaving(true);
 
-			// If this is an existing draft, update it
-			if (post && post.status === 'draft') {
-				await saveDraft(postId, {
-					rawContent,
-					platformContent,
-					templateId: selectedTemplate || null,
-					imageUrl: imageUrl || null,
+				// If this is an existing draft, update it
+				if (post && post.status === 'draft') {
+					await saveDraft(postId, {
+						rawContent,
+						platformContent,
+						templateId: selectedTemplate || null,
+						imageUrl: imageUrl || null,
+					});
+				} else {
+					// Otherwise, update the post
+					await updatePost(postId, {
+						rawContent,
+						platformContent,
+						templateId: selectedTemplate || null,
+						imageUrl: imageUrl || null,
+						status: 'draft',
+					});
+				}
+
+				markClean();
+				markContextClean();
+
+				if (!isAutoSave) {
+					toast.success('Draft saved', {
+						description: 'Your changes have been saved.',
+					});
+				}
+			} catch (error) {
+				console.error('Failed to save draft:', error);
+				toast.error('Failed to save draft', {
+					description:
+						error instanceof Error
+							? error.message
+							: 'Please try again.',
 				});
-			} else {
-				// Otherwise, update the post
-				await updatePost(postId, {
-					rawContent,
-					platformContent,
-					templateId: selectedTemplate || null,
-					imageUrl: imageUrl || null,
-					status: 'draft',
-				});
+			} finally {
+				setIsSaving(false);
 			}
-
-			markClean();
-			markContextClean();
-
-			if (!isAutoSave) {
-				toast.success('Draft saved', {
-					description: 'Your changes have been saved.',
-				});
-			}
-		} catch (error) {
-			console.error('Failed to save draft:', error);
-			toast.error('Failed to save draft', {
-				description: error instanceof Error ? error.message : 'Please try again.',
-			});
-		} finally {
-			setIsSaving(false);
-		}
-	}, [postId, post, rawContent, platformContent, selectedTemplate, imageUrl, isSaving, markClean, markContextClean]);
+		},
+		[
+			postId,
+			post,
+			rawContent,
+			platformContent,
+			selectedTemplate,
+			imageUrl,
+			isSaving,
+			markClean,
+			markContextClean,
+		]
+	);
 
 	// Handle publish
 	const handlePublish = useCallback(async () => {
@@ -215,7 +260,9 @@ export default function EditPostPage() {
 			markContextClean();
 
 			toast.success('Post published', {
-				description: `Your post has been published to ${selectedPlatforms.length} platform${selectedPlatforms.length > 1 ? 's' : ''}.`,
+				description: `Your post has been published to ${
+					selectedPlatforms.length
+				} platform${selectedPlatforms.length > 1 ? 's' : ''}.`,
 			});
 
 			// Redirect to posts page
@@ -223,37 +270,80 @@ export default function EditPostPage() {
 		} catch (error) {
 			console.error('Failed to publish post:', error);
 			toast.error('Failed to publish post', {
-				description: error instanceof Error ? error.message : 'Please try again.',
+				description:
+					error instanceof Error
+						? error.message
+						: 'Please try again.',
 			});
 		} finally {
 			setIsPublishing(false);
 		}
-	}, [postId, isDirty, selectedPlatforms.length, isPublishing, handleSaveDraft, markClean, markContextClean, router]);
+	}, [
+		postId,
+		isDirty,
+		selectedPlatforms.length,
+		isPublishing,
+		handleSaveDraft,
+		markClean,
+		markContextClean,
+		router,
+	]);
 
 	// Handle image upload
-	const handleImageUpload = useCallback(async (file: File | null) => {
-		if (!file || !postId) {
+	const handleImageUpload = useCallback(
+		async (file: File | null) => {
+			// Always update local preview (blob URL) for immediate feedback
 			handleImageChange(file);
-			return;
-		}
 
-		try {
-			const result = await uploadPostImage(postId, file);
-			handleImageChange(file); // This will create a preview URL
-			// Update the post with the new image URL
-			await updatePost(postId, {
-				imageUrl: result.imageUrl,
-			});
-			toast.success('Image uploaded', {
-				description: 'Your image has been uploaded and saved.',
-			});
-		} catch (error) {
-			console.error('Failed to upload image:', error);
-			toast.error('Failed to upload image', {
-				description: error instanceof Error ? error.message : 'Please try again.',
-			});
-		}
-	}, [postId, handleImageChange]);
+			if (!file) {
+				setImageUrl(undefined);
+				return;
+			}
+
+			// If we already have a saved post, upload to server and use returned data URL
+			if (postId) {
+				try {
+					const result = await uploadPostImage(postId, file);
+					setImageUrl(result.imageUrl);
+					toast.success('Image uploaded', {
+						description: 'Your image has been uploaded and saved.',
+					});
+				} catch (error) {
+					console.error('Failed to upload image:', error);
+					toast.error('Failed to upload image', {
+						description:
+							error instanceof Error
+								? error.message
+								: 'Please try again.',
+					});
+				}
+				return;
+			}
+
+			// For unsaved posts, convert to data URL so it persists when saving draft
+			const fileToDataUrl = (f: File) =>
+				new Promise<string>((resolve, reject) => {
+					const reader = new FileReader();
+					reader.onload = () => resolve(reader.result as string);
+					reader.onerror = () => reject(reader.error);
+					reader.readAsDataURL(f);
+				});
+
+			try {
+				const dataUrl = await fileToDataUrl(file);
+				setImageUrl(dataUrl);
+			} catch (error) {
+				console.error('Failed to read image:', error);
+				toast.error('Failed to read image', {
+					description:
+						error instanceof Error
+							? error.message
+							: 'Please try again.',
+				});
+			}
+		},
+		[postId, handleImageChange, setImageUrl]
+	);
 
 	// Show toast notification when error occurs
 	useEffect(() => {
@@ -269,7 +359,9 @@ export default function EditPostPage() {
 			<MainLayout>
 				<div className='container mx-auto max-w-4xl space-y-6'>
 					<Card className='p-6'>
-						<p className='text-center text-muted-foreground'>Loading post...</p>
+						<p className='text-center text-muted-foreground'>
+							Loading post...
+						</p>
 					</Card>
 				</div>
 			</MainLayout>
@@ -299,7 +391,10 @@ export default function EditPostPage() {
 								onTemplateChange={handleTemplateChange}
 							/>
 
-							<ImageUpload onImageChange={handleImageUpload} />
+							<ImageUpload
+								onImageChange={handleImageUpload}
+								initialImageUrl={post?.imageUrl}
+							/>
 
 							<ContentInput
 								value={rawContent}
@@ -340,15 +435,22 @@ export default function EditPostPage() {
 							>
 								{isSaving ? 'Saving...' : 'Save Draft'}
 							</Button>
-							{selectedPlatforms.length > 0 && rawContent.trim() && (
-								<Button
-									onClick={handlePublish}
-									disabled={isGenerating || isPublishing || isSaving}
-									size='lg'
-								>
-									{isPublishing ? 'Publishing...' : 'Publish'}
-								</Button>
-							)}
+							{selectedPlatforms.length > 0 &&
+								rawContent.trim() && (
+									<Button
+										onClick={handlePublish}
+										disabled={
+											isGenerating ||
+											isPublishing ||
+											isSaving
+										}
+										size='lg'
+									>
+										{isPublishing
+											? 'Publishing...'
+											: 'Publish'}
+									</Button>
+								)}
 						</div>
 					</div>
 				</Card>
@@ -356,4 +458,3 @@ export default function EditPostPage() {
 		</MainLayout>
 	);
 }
-

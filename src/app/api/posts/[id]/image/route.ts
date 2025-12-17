@@ -85,4 +85,3 @@ export async function POST(request: Request, { params }: RouteParams) {
 		return internalErrorResponse('Failed to upload image');
 	}
 }
-

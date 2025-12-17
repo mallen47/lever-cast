@@ -6,8 +6,9 @@ import { cn } from '@/lib/utils';
 import { mockUser } from '@/lib/mock-data/user';
 import { MessageCircle, Repeat2, Heart, Share } from 'lucide-react';
 
-// Check if URL is a blob URL (blob URLs don't work with Next.js Image)
-const isBlobUrl = (url: string) => url.startsWith('blob:');
+// Check if URL is a blob URL or data URL (these don't work with Next.js Image)
+const isBlobOrDataUrl = (url: string) =>
+	url.startsWith('blob:') || url.startsWith('data:');
 
 interface XPreviewProps {
 	content: string;
@@ -55,7 +56,7 @@ export function XPreview({ content, imageUrl, className }: XPreviewProps) {
 
 				{imageUrl && (
 					<div className='relative mb-3 aspect-video w-full overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800'>
-						{isBlobUrl(imageUrl) ? (
+						{isBlobOrDataUrl(imageUrl) ? (
 							// eslint-disable-next-line @next/next/no-img-element
 							<img
 								src={imageUrl}

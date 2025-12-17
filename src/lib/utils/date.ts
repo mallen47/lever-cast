@@ -10,7 +10,7 @@
 export function formatPostDate(date: Date | string): string {
 	// Convert string to Date if needed
 	const dateObj = typeof date === 'string' ? new Date(date) : date;
-	
+
 	// Validate date
 	if (isNaN(dateObj.getTime())) {
 		return 'Invalid date';
@@ -30,6 +30,7 @@ export function formatPostDate(date: Date | string): string {
 	return dateObj.toLocaleDateString('en-US', {
 		month: 'short',
 		day: 'numeric',
-		year: dateObj.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+		year:
+			dateObj.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
 	});
 }

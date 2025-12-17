@@ -8,13 +8,26 @@ import { toast } from 'sonner';
 
 interface ImageUploadProps {
 	onImageChange: (file: File | null) => void;
+	initialImageUrl?: string;
 }
 
-export function ImageUpload({ onImageChange }: ImageUploadProps) {
+export function ImageUpload({
+	onImageChange,
+	initialImageUrl,
+}: ImageUploadProps) {
 	const [dragActive, setDragActive] = useState(false);
-	const [fileName, setFileName] = useState<string | null>(null);
-	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+	const [fileName, setFileName] = useState<string | null>(() => {
+		// Initialize filename if we have an initial image URL
+		return initialImageUrl?.startsWith('data:') ? 'Uploaded image' : null;
+	});
+	const [previewUrl, setPreviewUrl] = useState<string | null>(
+		initialImageUrl || null
+	);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const initialImageUrlRef = useRef(initialImageUrl);
+
+	// Check if URL is a blob URL (needs cleanup) vs data URL (doesn't need cleanup)
+	const isBlobUrl = (url: string) => url.startsWith('blob:');
 
 	const handleFile = (file: File) => {
 		if (file && file.type.startsWith('image/')) {
@@ -41,10 +54,26 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 		}
 	};
 
-	// Clean up object URL on unmount or when file is removed
+	// Update preview URL when initialImageUrl changes (for editing existing posts)
+	useEffect(() => {
+		if (initialImageUrl && initialImageUrl !== initialImageUrlRef.current) {
+			initialImageUrlRef.current = initialImageUrl;
+			// Clean up previous blob URL if it exists
+			if (previewUrl && isBlobUrl(previewUrl)) {
+				URL.revokeObjectURL(previewUrl);
+			}
+			setPreviewUrl(initialImageUrl);
+			if (initialImageUrl.startsWith('data:')) {
+				setFileName('Uploaded image');
+			}
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [initialImageUrl]);
+
+	// Clean up object URL on unmount or when file is removed (only for blob URLs)
 	useEffect(() => {
 		return () => {
-			if (previewUrl) {
+			if (previewUrl && isBlobUrl(previewUrl)) {
 				URL.revokeObjectURL(previewUrl);
 			}
 		};
@@ -76,7 +105,7 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 	};
 
 	const handleRemove = () => {
-		if (previewUrl) {
+		if (previewUrl && isBlobUrl(previewUrl)) {
 			URL.revokeObjectURL(previewUrl);
 		}
 		setFileName(null);
@@ -89,6 +118,10 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 			description: 'The image has been removed from your post.',
 		});
 	};
+
+	// Determine if we should show the image preview
+	const showImagePreview =
+		(fileName && previewUrl) || (previewUrl && !fileName);
 
 	return (
 		<div className='space-y-2'>
@@ -105,7 +138,7 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 					dragActive
 						? 'border-accent bg-accent/10'
 						: 'border-border hover:border-accent/50',
-					fileName && 'border-solid bg-muted/50'
+					showImagePreview && 'border-solid bg-muted/50'
 				)}
 			>
 				<input
@@ -116,11 +149,11 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 					className='sr-only'
 					id='image-upload'
 				/>
-				{fileName && previewUrl ? (
+				{showImagePreview ? (
 					<div className='w-full space-y-3'>
 						<div className='flex items-center justify-between'>
 							<span className='text-sm font-medium'>
-								{fileName}
+								{fileName || 'Image'}
 							</span>
 							<Button
 								type='button'
@@ -133,9 +166,10 @@ export function ImageUpload({ onImageChange }: ImageUploadProps) {
 							</Button>
 						</div>
 						<div className='relative w-full overflow-hidden rounded-lg border border-border bg-muted'>
+							{/* eslint-disable-next-line @next/next/no-img-element */}
 							<img
-								src={previewUrl}
-								alt={fileName}
+								src={previewUrl!}
+								alt={fileName || 'Post image'}
 								className='h-auto w-full object-cover'
 							/>
 						</div>

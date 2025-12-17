@@ -6,8 +6,9 @@ import { cn } from '@/lib/utils';
 import { mockUser } from '@/lib/mock-data/user';
 import { ThumbsUp, MessageCircle, Share2 } from 'lucide-react';
 
-// Check if URL is a blob URL (blob URLs don't work with Next.js Image)
-const isBlobUrl = (url: string) => url.startsWith('blob:');
+// Check if URL is a blob URL or data URL (these don't work with Next.js Image)
+const isBlobOrDataUrl = (url: string) =>
+	url.startsWith('blob:') || url.startsWith('data:');
 
 interface LinkedInPreviewProps {
 	content: string;
@@ -54,7 +55,7 @@ export function LinkedInPreview({
 
 				{imageUrl && (
 					<div className='relative mb-4 aspect-video w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800'>
-						{isBlobUrl(imageUrl) ? (
+						{isBlobOrDataUrl(imageUrl) ? (
 							// eslint-disable-next-line @next/next/no-img-element
 							<img
 								src={imageUrl}
