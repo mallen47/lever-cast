@@ -1,75 +1,245 @@
 /**
  * Posts service
  * Abstracts post data fetching logic from components
- * In production, this will call an API
+ * Calls the API endpoints
  */
 
-import {
-	getAllPosts,
-	getPostsByStatus,
-	getPostById,
-	searchPosts,
-} from '@/lib/mock-data/posts';
 import type { Post, PostStatus } from '@/types';
-import {
-	API_DELAY_MS,
-	API_DELAY_POST_MS,
-	API_DELAY_DELETE_MS,
-	API_DELAY_PUBLISH_MS,
-} from '@/lib/constants';
+
+interface PostsListResponse {
+	posts: Post[];
+	total: number;
+	hasMore: boolean;
+}
+
+/**
+ * Transform API post response (with string dates) to Post type (with Date objects)
+ */
+function transformPost(
+	post: Omit<Post, 'createdAt' | 'updatedAt'> & {
+		createdAt: string;
+		updatedAt: string;
+	}
+): Post {
+	return {
+		...post,
+		createdAt: new Date(post.createdAt),
+		updatedAt: new Date(post.updatedAt),
+	};
+}
 
 /**
  * Get all posts
  */
 export async function fetchPosts(): Promise<Post[]> {
-	// Simulate API delay
-	await new Promise((resolve) => setTimeout(resolve, API_DELAY_MS));
-	return getAllPosts();
+	const response = await fetch('/api/posts', {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to fetch posts' } }));
+		throw new Error(error.error?.message || 'Failed to fetch posts');
+	}
+
+	const data = await response.json();
+	return data.posts.map(transformPost);
 }
 
 /**
  * Get posts by status
  */
 export async function fetchPostsByStatus(status: PostStatus): Promise<Post[]> {
-	// Simulate API delay
-	await new Promise((resolve) => setTimeout(resolve, API_DELAY_MS));
-	return getPostsByStatus(status);
+	const response = await fetch(`/api/posts?status=${status}`, {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to fetch posts' } }));
+		throw new Error(error.error?.message || 'Failed to fetch posts');
+	}
+
+	const data = await response.json();
+	return data.posts.map(transformPost);
 }
 
 /**
  * Get post by ID
  */
 export async function fetchPostById(id: string): Promise<Post | undefined> {
-	// Simulate API delay
-	await new Promise((resolve) => setTimeout(resolve, API_DELAY_POST_MS));
-	return getPostById(id);
+	const response = await fetch(`/api/posts/${id}`, {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		if (response.status === 404) {
+			return undefined;
+		}
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to fetch post' } }));
+		throw new Error(error.error?.message || 'Failed to fetch post');
+	}
+
+	const post = await response.json();
+	return transformPost(post);
 }
 
 /**
  * Search posts
  */
 export async function searchPostsByQuery(query: string): Promise<Post[]> {
-	// Simulate API delay
-	await new Promise((resolve) => setTimeout(resolve, API_DELAY_MS));
-	return searchPosts(query);
+	// For now, fetch all posts and filter client-side
+	// In the future, we can add a search endpoint
+	const allPosts = await fetchPosts();
+	const lowerQuery = query.toLowerCase();
+	return allPosts.filter(
+		(post) =>
+			post.rawContent.toLowerCase().includes(lowerQuery) ||
+			Object.values(post.platformContent).some((content) =>
+				content.toLowerCase().includes(lowerQuery)
+			)
+	);
 }
 
 /**
- * Delete post (mock)
+ * Create a new post (draft)
+ */
+export async function createPost(data: {
+	rawContent: string;
+	platformContent?: Record<string, string>;
+	templateId?: string;
+	imageUrl?: string;
+	status?: PostStatus;
+}): Promise<Post> {
+	const response = await fetch('/api/posts', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			rawContent: data.rawContent,
+			platformContent: data.platformContent || {},
+			templateId: data.templateId,
+			imageUrl: data.imageUrl,
+			status: data.status || 'draft',
+		}),
+	});
+
+	if (!response.ok) {
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to create post' } }));
+		throw new Error(error.error?.message || 'Failed to create post');
+	}
+
+	const post = await response.json();
+	return transformPost(post);
+}
+
+/**
+ * Update a post
+ */
+export async function updatePost(
+	id: string,
+	data: {
+		rawContent?: string;
+		platformContent?: Record<string, string>;
+		templateId?: string | null;
+		imageUrl?: string | null;
+		status?: PostStatus;
+	}
+): Promise<Post> {
+	const response = await fetch(`/api/posts/${id}`, {
+		method: 'PUT',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(data),
+	});
+
+	if (!response.ok) {
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to update post' } }));
+		throw new Error(error.error?.message || 'Failed to update post');
+	}
+
+	const post = await response.json();
+	return transformPost(post);
+}
+
+/**
+ * Delete post
  */
 export async function deletePost(id: string): Promise<void> {
-	// Simulate API delay
-	await new Promise((resolve) => setTimeout(resolve, API_DELAY_DELETE_MS));
-	// In production, this would call an API
-	console.log('Post deleted:', id);
+	const response = await fetch(`/api/posts/${id}`, {
+		method: 'DELETE',
+	});
+
+	if (!response.ok) {
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to delete post' } }));
+		throw new Error(error.error?.message || 'Failed to delete post');
+	}
 }
 
 /**
- * Publish post (mock)
+ * Publish post (updates status to published)
  */
-export async function publishPost(id: string): Promise<void> {
-	// Simulate API delay
-	await new Promise((resolve) => setTimeout(resolve, API_DELAY_PUBLISH_MS));
-	// In production, this would call an API
-	console.log('Post published:', id);
+export async function publishPost(id: string): Promise<Post> {
+	return updatePost(id, { status: 'published' });
+}
+
+/**
+ * Save draft (updates status to draft)
+ */
+export async function saveDraft(
+	id: string,
+	data: {
+		rawContent?: string;
+		platformContent?: Record<string, string>;
+		templateId?: string | null;
+		imageUrl?: string | null;
+	}
+): Promise<Post> {
+	return updatePost(id, { ...data, status: 'draft' });
+}
+
+/**
+ * Upload image for a post
+ */
+export async function uploadPostImage(
+	postId: string,
+	file: File
+): Promise<{ imageUrl: string }> {
+	const formData = new FormData();
+	formData.append('image', file);
+
+	const response = await fetch(`/api/posts/${postId}/image`, {
+		method: 'POST',
+		body: formData,
+	});
+
+	if (!response.ok) {
+		const error = await response
+			.json()
+			.catch(() => ({ error: { message: 'Failed to upload image' } }));
+		throw new Error(error.error?.message || 'Failed to upload image');
+	}
+
+	return await response.json();
 }

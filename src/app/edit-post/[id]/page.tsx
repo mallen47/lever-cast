@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useCallback, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ContentInput } from '@/components/content/ContentInput';
 import { ImageUpload } from '@/components/content/ImageUpload';
@@ -12,16 +12,25 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { usePostEditor, useUnsavedChangesWarning } from '@/hooks';
 import { useUnsavedChanges } from '@/lib/providers/unsaved-changes-provider';
-import { createPost, publishPost, uploadPostImage } from '@/lib/services';
+import {
+	fetchPostById,
+	updatePost,
+	saveDraft,
+	publishPost,
+	uploadPostImage,
+} from '@/lib/services';
 import { toast } from 'sonner';
 import type { Template } from '@/types/templates';
+import type { Post } from '@/types';
 
 export default function EditPostPage() {
-	const searchParams = useSearchParams();
+	const params = useParams();
 	const router = useRouter();
+	const postId = params.id as string;
+	const [isLoading, setIsLoading] = useState(true);
+	const [post, setPost] = useState<Post | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isPublishing, setIsPublishing] = useState(false);
-	const [savedPostId, setSavedPostId] = useState<string | null>(null);
 	const [autoSaveTimeout, setAutoSaveTimeout] =
 		useState<NodeJS.Timeout | null>(null);
 
@@ -41,7 +50,13 @@ export default function EditPostPage() {
 		handleImageChange,
 		setImageUrl,
 		markClean,
-	} = usePostEditor();
+	} = usePostEditor({
+		initialContent: post?.rawContent || '',
+		initialPlatforms: post
+			? (Object.keys(post.platformContent) as typeof selectedPlatforms)
+			: [],
+		initialImageUrl: post?.imageUrl,
+	});
 
 	// Get the unsaved changes context for client-side navigation blocking
 	const { setIsDirty: setContextDirty, markClean: markContextClean } =
@@ -57,9 +72,61 @@ export default function EditPostPage() {
 		return () => setContextDirty(false);
 	}, [isDirty, setContextDirty]);
 
-	// Auto-save functionality (debounced) - only if we have a saved post
+	// Load post data
 	useEffect(() => {
-		if (!isDirty || !savedPostId || isSaving) {
+		const loadPost = async () => {
+			try {
+				setIsLoading(true);
+				const postData = await fetchPostById(postId);
+				if (postData) {
+					setPost(postData);
+					setRawContent(postData.rawContent);
+					setSelectedTemplate(postData.templateId || '');
+					setPlatforms(
+						Object.keys(
+							postData.platformContent
+						) as typeof selectedPlatforms
+					);
+					// Set image URL if it exists
+					if (postData.imageUrl) {
+						setImageUrl(postData.imageUrl);
+					}
+				} else {
+					toast.error('Post not found', {
+						description:
+							'The post you are trying to edit does not exist.',
+					});
+					router.push('/posts');
+				}
+			} catch (error) {
+				console.error('Failed to load post:', error);
+				toast.error('Failed to load post', {
+					description:
+						error instanceof Error
+							? error.message
+							: 'Please try again.',
+				});
+				router.push('/posts');
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		if (postId) {
+			loadPost();
+		}
+	}, [
+		postId,
+		router,
+		setRawContent,
+		setSelectedTemplate,
+		setPlatforms,
+		setImageUrl,
+	]);
+
+	// Auto-save functionality (debounced)
+	useEffect(() => {
+		if (!isDirty || !postId || isLoading || isSaving) {
 			return;
 		}
 
@@ -83,7 +150,8 @@ export default function EditPostPage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		isDirty,
-		savedPostId,
+		postId,
+		isLoading,
 		isSaving,
 		rawContent,
 		platformContent,
@@ -105,52 +173,39 @@ export default function EditPostPage() {
 	const handleTemplateChange = useCallback(
 		(template: Template | null) => {
 			if (template) {
-				// Auto-select platforms from the template
 				setPlatforms(template.platformSupport);
 			} else {
-				// Clear platforms if no template selected
 				setPlatforms([]);
 			}
 		},
 		[setPlatforms]
 	);
 
-	// Handle template query parameter
-	useEffect(() => {
-		const templateId = searchParams.get('template');
-		if (templateId && templateId !== selectedTemplate) {
-			setSelectedTemplate(templateId);
-		}
-	}, [searchParams, selectedTemplate, setSelectedTemplate]);
-
 	// Handle save draft (manual or auto-save)
 	const handleSaveDraft = useCallback(
 		async (isAutoSave = false) => {
-			if (isSaving) return;
+			if (!postId || isSaving) return;
 
 			try {
 				setIsSaving(true);
 
-				// If we already have a saved post, update it
-				if (savedPostId) {
-					const { updatePost } = await import('@/lib/services');
-					await updatePost(savedPostId, {
+				// If this is an existing draft, update it
+				if (post && post.status === 'draft') {
+					await saveDraft(postId, {
+						rawContent,
+						platformContent,
+						templateId: selectedTemplate || null,
+						imageUrl: imageUrl || null,
+					});
+				} else {
+					// Otherwise, update the post
+					await updatePost(postId, {
 						rawContent,
 						platformContent,
 						templateId: selectedTemplate || null,
 						imageUrl: imageUrl || null,
 						status: 'draft',
 					});
-				} else {
-					// Otherwise, create a new draft
-					const newPost = await createPost({
-						rawContent,
-						platformContent,
-						templateId: selectedTemplate,
-						imageUrl: imageUrl,
-						status: 'draft',
-					});
-					setSavedPostId(newPost.id);
 				}
 
 				markClean();
@@ -174,7 +229,8 @@ export default function EditPostPage() {
 			}
 		},
 		[
-			savedPostId,
+			postId,
+			post,
 			rawContent,
 			platformContent,
 			selectedTemplate,
@@ -187,26 +243,13 @@ export default function EditPostPage() {
 
 	// Handle publish
 	const handlePublish = useCallback(async () => {
-		if (isPublishing) return;
+		if (!postId || isPublishing) return;
 
 		try {
 			setIsPublishing(true);
 
-			let postId = savedPostId;
-
-			// If no saved post yet, create one first
-			if (!postId) {
-				const newPost = await createPost({
-					rawContent,
-					platformContent,
-					templateId: selectedTemplate,
-					imageUrl: imageUrl,
-					status: 'draft',
-				});
-				postId = newPost.id;
-				setSavedPostId(postId);
-			} else if (isDirty) {
-				// Save as draft first if there are unsaved changes
+			// First save as draft if there are unsaved changes
+			if (isDirty) {
 				await handleSaveDraft(true);
 			}
 
@@ -236,12 +279,8 @@ export default function EditPostPage() {
 			setIsPublishing(false);
 		}
 	}, [
-		savedPostId,
+		postId,
 		isDirty,
-		rawContent,
-		platformContent,
-		selectedTemplate,
-		imageUrl,
 		selectedPlatforms.length,
 		isPublishing,
 		handleSaveDraft,
@@ -250,7 +289,7 @@ export default function EditPostPage() {
 		router,
 	]);
 
-	// Handle image upload - if we have a saved post, upload immediately
+	// Handle image upload
 	const handleImageUpload = useCallback(
 		async (file: File | null) => {
 			// Always update local preview (blob URL) for immediate feedback
@@ -261,10 +300,10 @@ export default function EditPostPage() {
 				return;
 			}
 
-			// If we have a saved post, upload to server and use returned data URL
-			if (savedPostId) {
+			// If we already have a saved post, upload to server and use returned data URL
+			if (postId) {
 				try {
-					const result = await uploadPostImage(savedPostId, file);
+					const result = await uploadPostImage(postId, file);
 					setImageUrl(result.imageUrl);
 					toast.success('Image uploaded', {
 						description: 'Your image has been uploaded and saved.',
@@ -303,7 +342,7 @@ export default function EditPostPage() {
 				});
 			}
 		},
-		[savedPostId, handleImageChange, setImageUrl]
+		[postId, handleImageChange, setImageUrl]
 	);
 
 	// Show toast notification when error occurs
@@ -315,12 +354,30 @@ export default function EditPostPage() {
 		}
 	}, [error]);
 
+	if (isLoading) {
+		return (
+			<MainLayout>
+				<div className='container mx-auto max-w-4xl space-y-6'>
+					<Card className='p-6'>
+						<p className='text-center text-muted-foreground'>
+							Loading post...
+						</p>
+					</Card>
+				</div>
+			</MainLayout>
+		);
+	}
+
+	if (!post) {
+		return null;
+	}
+
 	return (
 		<MainLayout>
 			<div className='container mx-auto max-w-4xl space-y-6'>
 				<div>
 					<h1 className='text-3xl font-bold text-foreground'>
-						New Post
+						Edit Post
 					</h1>
 				</div>
 
@@ -334,7 +391,10 @@ export default function EditPostPage() {
 								onTemplateChange={handleTemplateChange}
 							/>
 
-							<ImageUpload onImageChange={handleImageUpload} />
+							<ImageUpload
+								onImageChange={handleImageUpload}
+								initialImageUrl={post?.imageUrl}
+							/>
 
 							<ContentInput
 								value={rawContent}
@@ -367,19 +427,14 @@ export default function EditPostPage() {
 
 						{/* Action Buttons */}
 						<div className='flex justify-end gap-3'>
-							{(rawContent.trim() ||
-								selectedPlatforms.length > 0) && (
-								<Button
-									onClick={() => handleSaveDraft(false)}
-									disabled={
-										!isDirty || isSaving || isPublishing
-									}
-									variant='outline'
-									size='lg'
-								>
-									{isSaving ? 'Saving...' : 'Save Draft'}
-								</Button>
-							)}
+							<Button
+								onClick={() => handleSaveDraft(false)}
+								disabled={!isDirty || isSaving || isPublishing}
+								variant='outline'
+								size='lg'
+							>
+								{isSaving ? 'Saving...' : 'Save Draft'}
+							</Button>
 							{selectedPlatforms.length > 0 &&
 								rawContent.trim() && (
 									<Button

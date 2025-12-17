@@ -10,6 +10,8 @@ interface UsePostEditorOptions {
 	initialPlatforms?: PlatformId[];
 	/** Initial raw content */
 	initialContent?: string;
+	/** Initial image URL */
+	initialImageUrl?: string;
 }
 
 /**
@@ -34,6 +36,8 @@ interface UsePostEditorReturn {
 	/** Set all platforms at once (used for template auto-selection) */
 	setPlatforms: (platforms: PlatformId[]) => void;
 	handleImageChange: (file: File | null) => void;
+	/** Set image URL directly (for loading existing posts) */
+	setImageUrl: (url: string | undefined) => void;
 	clearError: () => void;
 	reset: () => void;
 	/** Mark the form as clean (after saving) */
@@ -55,7 +59,9 @@ export function usePostEditor(
 		options?.initialPlatforms ?? []
 	);
 	const [selectedTemplate, setSelectedTemplateInternal] = useState('');
-	const [imageUrl, setImageUrl] = useState<string | undefined>();
+	const [imageUrl, setImageUrl] = useState<string | undefined>(
+		options?.initialImageUrl
+	);
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [isDirty, setIsDirty] = useState(false);
@@ -108,8 +114,8 @@ export function usePostEditor(
 	}, []);
 
 	const handleImageChange = useCallback((file: File | null) => {
-		// Clean up previous URL to prevent memory leak
-		if (imageUrlRef.current) {
+		// Clean up previous URL to prevent memory leak (only if it's an object URL)
+		if (imageUrlRef.current && imageUrlRef.current.startsWith('blob:')) {
 			URL.revokeObjectURL(imageUrlRef.current);
 		}
 
@@ -120,6 +126,14 @@ export function usePostEditor(
 		} else {
 			setImageUrl(undefined);
 		}
+	}, []);
+
+	const setImageUrlDirect = useCallback((url: string | undefined) => {
+		// Clean up previous URL to prevent memory leak (only if it's an object URL)
+		if (imageUrlRef.current && imageUrlRef.current.startsWith('blob:')) {
+			URL.revokeObjectURL(imageUrlRef.current);
+		}
+		setImageUrl(url);
 	}, []);
 
 	// Generate content when platforms, rawContent, or template changes
@@ -235,6 +249,7 @@ export function usePostEditor(
 		togglePlatform,
 		setPlatforms,
 		handleImageChange,
+		setImageUrl: setImageUrlDirect,
 		clearError,
 		reset,
 		markClean,

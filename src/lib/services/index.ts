@@ -11,4 +11,8 @@ export {
 	searchPostsByQuery,
 	deletePost,
 	publishPost,
+	createPost,
+	updatePost,
+	saveDraft,
+	uploadPostImage,
 } from './posts';

@@ -88,10 +88,9 @@ export default function PostsPage() {
 		}
 	};
 
-	const handleEdit = () => {
-		// Navigate to edit-post with post data
-		// For now, just navigate - in production, we'd pass the post ID
-		router.push('/edit-post');
+	const handleEdit = (post: Post) => {
+		// Navigate to edit-post with post ID
+		router.push(`/edit-post/${post.id}`);
 	};
 
 	const handleDelete = async (postId: string) => {
@@ -203,7 +202,7 @@ export default function PostsPage() {
 							<PostCard
 								key={post.id}
 								post={post}
-								onEdit={handleEdit}
+								onEdit={() => handleEdit(post)}
 								onDelete={handleDelete}
 								onPublish={handlePublish}
 							/>
