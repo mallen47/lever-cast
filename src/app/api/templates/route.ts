@@ -134,7 +134,13 @@ export async function GET() {
 			total: templates.length,
 		};
 
-		return successResponse(response);
+		const nextResponse = successResponse(response);
+		nextResponse.headers.set(
+			'Cache-Control',
+			'private, max-age=30, stale-while-revalidate=300'
+		);
+
+		return nextResponse;
 	} catch (error) {
 		console.error('Error fetching templates:', error);
 		return internalErrorResponse('Failed to fetch templates');

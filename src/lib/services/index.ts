@@ -1,5 +1,5 @@
 export { generateFormattedContent } from './content-generator';
-export { getTemplates, getTemplateById } from './templates';
+export { getTemplates, getTemplateById, TEMPLATES_SWR_KEY } from './templates';
 export {
 	fetchPosts,
 	POSTS_SWR_KEY,

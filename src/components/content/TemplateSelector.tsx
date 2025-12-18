@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import {
 	Select,
 	SelectContent,
@@ -10,7 +10,8 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { fetchTemplates } from '@/lib/services/api/templates';
+import useSWR from 'swr';
+import { getTemplates, TEMPLATES_SWR_KEY } from '@/lib/services/templates';
 import type { Template } from '@/types/templates';
 
 interface TemplateSelectorProps {
@@ -25,27 +26,15 @@ export function TemplateSelector({
 	onValueChange,
 	onTemplateChange,
 }: TemplateSelectorProps) {
-	const [templates, setTemplates] = useState<Template[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		async function loadTemplates() {
-			try {
-				setIsLoading(true);
-				setError(null);
-				const data = await fetchTemplates();
-				setTemplates(data);
-			} catch (err) {
-				console.error('Failed to load templates:', err);
-				setError('Failed to load templates');
-			} finally {
-				setIsLoading(false);
-			}
-		}
-
-		loadTemplates();
-	}, []);
+	const {
+		data: templates = [],
+		isLoading,
+		error,
+	} = useSWR<Template[]>(TEMPLATES_SWR_KEY, getTemplates, {
+		dedupingInterval: 30_000,
+		revalidateOnFocus: false,
+		keepPreviousData: true,
+	});
 
 	const handleValueChange = useCallback(
 		(newValue: string) => {
@@ -78,7 +67,11 @@ export function TemplateSelector({
 				<Label className='text-base font-semibold'>
 					Select Template
 				</Label>
-				<p className='text-sm text-destructive'>{error}</p>
+				<p className='text-sm text-destructive'>
+					{error instanceof Error
+						? error.message
+						: 'Failed to load templates'}
+				</p>
 			</div>
 		);
 	}
