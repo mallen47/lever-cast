@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PostCard } from '@/components/posts/PostCard';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,7 @@ import {
 import { Card } from '@/components/ui/card';
 import {
 	fetchPosts,
-	searchPostsByQuery,
+	POSTS_SWR_KEY,
 	deletePost,
 	publishPost,
 } from '@/lib/services';
@@ -24,69 +24,56 @@ import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks';
 import { SEARCH_DEBOUNCE_MS } from '@/lib/constants';
 import { toast } from 'sonner';
+import useSWR from 'swr';
 
 export default function PostsPage() {
-	const [posts, setPosts] = useState<Post[]>([]);
-	const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
 	const [statusFilter, setStatusFilter] = useState<PostStatus | 'all'>('all');
 	const [searchQuery, setSearchQuery] = useState('');
-	const [isLoading, setIsLoading] = useState(true);
 	const router = useRouter();
 
 	// Debounce search query to avoid excessive filtering
 	const debouncedSearchQuery = useDebounce(searchQuery, SEARCH_DEBOUNCE_MS);
 
-	// Fetch posts on mount
+	const {
+		data: posts = [],
+		isLoading,
+		error,
+		mutate,
+	} = useSWR<Post[]>(POSTS_SWR_KEY, fetchPosts, {
+		dedupingInterval: 30_000,
+		revalidateOnFocus: false,
+		keepPreviousData: true,
+	});
+
 	useEffect(() => {
-		loadPosts();
-	}, []);
-
-	// Filter posts when status or debounced search changes
-	useEffect(() => {
-		let cancelled = false;
-
-		const applyFilters = async () => {
-			let result: Post[] = [];
-
-			// Apply search filter (using debounced value)
-			if (debouncedSearchQuery.trim()) {
-				result = await searchPostsByQuery(debouncedSearchQuery);
-			} else {
-				result = [...posts];
-			}
-
-			// Apply status filter
-			if (statusFilter !== 'all') {
-				result = result.filter((post) => post.status === statusFilter);
-			}
-
-			// Only update state if not cancelled
-			if (!cancelled) {
-				setFilteredPosts(result);
-			}
-		};
-
-		applyFilters();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [posts, statusFilter, debouncedSearchQuery]);
-
-	const loadPosts = async () => {
-		setIsLoading(true);
-		try {
-			const allPosts = await fetchPosts();
-			setPosts(allPosts);
-		} catch (error) {
+		if (error) {
 			console.error('Failed to load posts:', error);
 			toast.error('Failed to load posts', {
 				description: 'Please try refreshing the page.',
 			});
-		} finally {
-			setIsLoading(false);
 		}
-	};
+	}, [error]);
+
+	const filteredPosts = useMemo(() => {
+		const lowerQuery = debouncedSearchQuery.trim().toLowerCase();
+		let result = posts;
+
+		if (lowerQuery) {
+			result = result.filter(
+				(post) =>
+					post.rawContent.toLowerCase().includes(lowerQuery) ||
+					Object.values(post.platformContent).some((content) =>
+						content.toLowerCase().includes(lowerQuery)
+					)
+			);
+		}
+
+		if (statusFilter !== 'all') {
+			result = result.filter((post) => post.status === statusFilter);
+		}
+
+		return result;
+	}, [posts, statusFilter, debouncedSearchQuery]);
 
 	const handleEdit = (post: Post) => {
 		// Navigate to edit-post with post ID
@@ -96,8 +83,11 @@ export default function PostsPage() {
 	const handleDelete = async (postId: string) => {
 		try {
 			await deletePost(postId);
-			// Remove from local state
-			setPosts((prev) => prev.filter((post) => post.id !== postId));
+			await mutate(
+				(prev) =>
+					prev ? prev.filter((post) => post.id !== postId) : prev,
+				{ revalidate: false }
+			);
 			toast.success('Post deleted', {
 				description: 'The post has been successfully deleted.',
 			});
@@ -112,13 +102,14 @@ export default function PostsPage() {
 	const handlePublish = async (postId: string) => {
 		try {
 			await publishPost(postId);
-			// Update post status in local state
-			setPosts((prev) =>
-				prev.map((post) =>
-					post.id === postId
-						? { ...post, status: 'published' as PostStatus }
-						: post
-				)
+			await mutate(
+				(prev) =>
+					prev?.map((post) =>
+						post.id === postId
+							? { ...post, status: 'published' as PostStatus }
+							: post
+					) ?? prev,
+				{ revalidate: false }
 			);
 			toast.success('Post published', {
 				description: 'Your post has been successfully published.',

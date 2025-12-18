@@ -6,11 +6,7 @@
 
 import type { Post, PostStatus } from '@/types';
 
-interface PostsListResponse {
-	posts: Post[];
-	total: number;
-	hasMore: boolean;
-}
+export const POSTS_SWR_KEY = 'posts';
 
 /**
  * Transform API post response (with string dates) to Post type (with Date objects)

@@ -97,11 +97,18 @@ export async function GET(request: Request) {
 			order,
 		});
 
-		return successResponse({
+		const response = successResponse({
 			posts: result.posts.map(toPostResponse),
 			total: result.total,
 			hasMore: result.hasMore,
 		});
+
+		response.headers.set(
+			'Cache-Control',
+			'private, max-age=30, stale-while-revalidate=300'
+		);
+
+		return response;
 	} catch (error) {
 		console.error('Error fetching posts:', error);
 		return internalErrorResponse('Failed to fetch posts');
