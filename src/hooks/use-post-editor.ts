@@ -39,6 +39,8 @@ interface UsePostEditorReturn {
 	/** Set image URL directly (for loading existing posts) */
 	setImageUrl: (url: string | undefined) => void;
 	clearError: () => void;
+	applyPlatformContent: (content: PlatformContent) => void;
+	setGeneratingState: (value: boolean) => void;
 	reset: () => void;
 	/** Mark the form as clean (after saving) */
 	markClean: () => void;
@@ -134,6 +136,24 @@ export function usePostEditor(
 			URL.revokeObjectURL(imageUrlRef.current);
 		}
 		setImageUrl(url);
+	}, []);
+
+	const setGeneratingState = useCallback((value: boolean) => {
+		setIsGenerating(value);
+	}, []);
+
+	const applyPlatformContent = useCallback((content: PlatformContent) => {
+		setPlatformContent((prev) => {
+			const next = { ...prev };
+			Object.entries(content).forEach(([platformId, value]) => {
+				if (typeof value === 'string' && value.trim()) {
+					next[platformId as PlatformId] = value.trim();
+				}
+			});
+			return next;
+		});
+		// New generated content is an unsaved change
+		setIsDirty(true);
 	}, []);
 
 	// Generate content when platforms, rawContent, or template changes
@@ -251,6 +271,8 @@ export function usePostEditor(
 		handleImageChange,
 		setImageUrl: setImageUrlDirect,
 		clearError,
+		applyPlatformContent,
+		setGeneratingState,
 		reset,
 		markClean,
 	};

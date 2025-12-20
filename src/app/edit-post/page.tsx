@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useCallback, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ContentInput } from '@/components/content/ContentInput';
 import { ImageUpload } from '@/components/content/ImageUpload';
@@ -12,18 +12,27 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { usePostEditor, useUnsavedChangesWarning } from '@/hooks';
 import { useUnsavedChanges } from '@/lib/providers/unsaved-changes-provider';
-import { createPost, publishPost, uploadPostImage } from '@/lib/services';
+import {
+	createPost,
+	uploadPostImage,
+	generatePlatformContent,
+} from '@/lib/services';
 import { toast } from 'sonner';
+import type { GeneratePlatformContentPayload } from '@/lib/services/api/generate';
+import type { PlatformId } from '@/types';
 import type { Template } from '@/types/templates';
 
 export default function EditPostPage() {
 	const searchParams = useSearchParams();
-	const router = useRouter();
 	const [isSaving, setIsSaving] = useState(false);
 	const [isPublishing, setIsPublishing] = useState(false);
 	const [savedPostId, setSavedPostId] = useState<string | null>(null);
 	const [autoSaveTimeout, setAutoSaveTimeout] =
 		useState<NodeJS.Timeout | null>(null);
+	const [selectedTemplateData, setSelectedTemplateData] =
+		useState<Template | null>(null);
+	const lastGenerationPayloadRef =
+		useRef<GeneratePlatformContentPayload | null>(null);
 
 	const {
 		rawContent,
@@ -40,6 +49,8 @@ export default function EditPostPage() {
 		setPlatforms,
 		handleImageChange,
 		setImageUrl,
+		applyPlatformContent,
+		setGeneratingState,
 		markClean,
 	} = usePostEditor();
 
@@ -107,9 +118,11 @@ export default function EditPostPage() {
 			if (template) {
 				// Auto-select platforms from the template
 				setPlatforms(template.platformSupport);
+				setSelectedTemplateData(template);
 			} else {
 				// Clear platforms if no template selected
 				setPlatforms([]);
+				setSelectedTemplateData(null);
 			}
 		},
 		[setPlatforms]
@@ -185,69 +198,112 @@ export default function EditPostPage() {
 		]
 	);
 
-	// Handle publish
-	const handlePublish = useCallback(async () => {
-		if (isPublishing) return;
-
-		try {
-			setIsPublishing(true);
-
-			let postId = savedPostId;
-
-			// If no saved post yet, create one first
-			if (!postId) {
-				const newPost = await createPost({
-					rawContent,
-					platformContent,
-					templateId: selectedTemplate,
-					imageUrl: imageUrl,
-					status: 'draft',
-				});
-				postId = newPost.id;
-				setSavedPostId(postId);
-			} else if (isDirty) {
-				// Save as draft first if there are unsaved changes
-				await handleSaveDraft(true);
+	const buildGenerationPayload =
+		useCallback((): GeneratePlatformContentPayload | null => {
+			if (
+				!rawContent.trim() ||
+				selectedPlatforms.length === 0 ||
+				!selectedTemplate
+			) {
+				return null;
 			}
 
-			// Then publish
-			await publishPost(postId);
+			return {
+				rawContent: rawContent.trim(),
+				platforms: selectedPlatforms,
+				templateId: selectedTemplate,
+				templatePrompts: selectedTemplateData?.platformPrompts?.length
+					? selectedTemplateData.platformPrompts.map((prompt) => ({
+							platformId: prompt.platformId as PlatformId,
+							prompt: prompt.prompt,
+					  }))
+					: undefined,
+				image: imageUrl
+					? imageUrl.startsWith('data:')
+						? { dataUrl: imageUrl }
+						: { url: imageUrl }
+					: undefined,
+			};
+		}, [
+			imageUrl,
+			rawContent,
+			selectedPlatforms,
+			selectedTemplate,
+			selectedTemplateData,
+		]);
 
-			markClean();
-			markContextClean();
+	const performGeneration = useCallback(
+		async (payload: GeneratePlatformContentPayload) => {
+			setIsPublishing(true);
+			setGeneratingState(true);
+			lastGenerationPayloadRef.current = payload;
 
-			toast.success('Post published', {
-				description: `Your post has been published to ${
-					selectedPlatforms.length
-				} platform${selectedPlatforms.length > 1 ? 's' : ''}.`,
-			});
-
-			// Redirect to posts page
-			router.push('/posts');
-		} catch (error) {
-			console.error('Failed to publish post:', error);
-			toast.error('Failed to publish post', {
-				description:
+			try {
+				const content = await generatePlatformContent(payload);
+				applyPlatformContent(content);
+				toast.success('Platform content generated', {
+					description: 'Review and edit before final publish.',
+				});
+			} catch (error) {
+				const message =
 					error instanceof Error
 						? error.message
-						: 'Please try again.',
-			});
-		} finally {
-			setIsPublishing(false);
+						: 'Failed to generate content. Please try again.';
+
+				toast.error('Content generation failed', {
+					description: message,
+					action: lastGenerationPayloadRef.current
+						? {
+								label: 'Retry',
+								onClick: () => {
+									if (lastGenerationPayloadRef.current) {
+										void performGeneration(
+											lastGenerationPayloadRef.current
+										);
+									}
+								},
+						  }
+						: undefined,
+				});
+			} finally {
+				setGeneratingState(false);
+				setIsPublishing(false);
+			}
+		},
+		[applyPlatformContent, setGeneratingState]
+	);
+
+	// Handle publish (phase 1: send to OpenAI for generation)
+	const handlePublish = useCallback(async () => {
+		if (isPublishing || isGenerating) return;
+
+		if (!rawContent.trim()) {
+			toast.error('Add some content before publishing.');
+			return;
 		}
+
+		if (!selectedTemplate) {
+			toast.error('Select a template before publishing.');
+			return;
+		}
+
+		if (selectedPlatforms.length === 0) {
+			toast.error('Select at least one platform.');
+			return;
+		}
+
+		const payload = buildGenerationPayload();
+		if (!payload) return;
+
+		await performGeneration(payload);
 	}, [
-		savedPostId,
-		isDirty,
-		rawContent,
-		platformContent,
-		selectedTemplate,
-		imageUrl,
-		selectedPlatforms.length,
+		buildGenerationPayload,
+		isGenerating,
 		isPublishing,
-		handleSaveDraft,
-		markClean,
-		markContextClean,
-		router,
+		performGeneration,
+		rawContent,
+		selectedPlatforms.length,
+		selectedTemplate,
 	]);
 
 	// Handle image upload - if we have a saved post, upload immediately

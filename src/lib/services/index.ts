@@ -13,3 +13,4 @@ export {
 	saveDraft,
 	uploadPostImage,
 } from './posts';
+export { generatePlatformContent } from './api/generate';
