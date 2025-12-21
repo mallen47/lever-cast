@@ -16,7 +16,6 @@ import {
 	fetchPostById,
 	updatePost,
 	saveDraft,
-	publishPost,
 	uploadPostImage,
 } from '@/lib/services';
 import { toast } from 'sonner';
@@ -241,7 +240,7 @@ export default function EditPostPage() {
 		]
 	);
 
-	// Handle publish
+	// Handle mark as generated (no social publish yet)
 	const handlePublish = useCallback(async () => {
 		if (!postId || isPublishing) return;
 
@@ -253,23 +252,18 @@ export default function EditPostPage() {
 				await handleSaveDraft(true);
 			}
 
-			// Then publish
-			await publishPost(postId);
+			// Mark as generated (no social publish yet)
+			await updatePost(postId, { status: 'generated' });
 
 			markClean();
 			markContextClean();
 
-			toast.success('Post published', {
-				description: `Your post has been published to ${
-					selectedPlatforms.length
-				} platform${selectedPlatforms.length > 1 ? 's' : ''}.`,
+			toast.success('Post marked generated', {
+				description: 'Generated content is ready to review.',
 			});
-
-			// Redirect to posts page
-			router.push('/posts');
 		} catch (error) {
-			console.error('Failed to publish post:', error);
-			toast.error('Failed to publish post', {
+			console.error('Failed to mark generated:', error);
+			toast.error('Failed to mark generated', {
 				description:
 					error instanceof Error
 						? error.message
@@ -281,12 +275,10 @@ export default function EditPostPage() {
 	}, [
 		postId,
 		isDirty,
-		selectedPlatforms.length,
 		isPublishing,
 		handleSaveDraft,
 		markClean,
 		markContextClean,
-		router,
 	]);
 
 	// Handle image upload
@@ -447,8 +439,8 @@ export default function EditPostPage() {
 										size='lg'
 									>
 										{isPublishing
-											? 'Publishing...'
-											: 'Publish'}
+											? 'Marking...'
+											: 'Mark Generated'}
 									</Button>
 								)}
 						</div>

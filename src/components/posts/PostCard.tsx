@@ -80,10 +80,10 @@ export function PostCard({ post, onEdit, onDelete, onPublish }: PostCardProps) {
 								<Edit className='mr-2 h-4 w-4' />
 								<span>Edit</span>
 							</DropdownMenuItem>
-							{post.status !== 'published' && (
+							{post.status !== 'generated' && (
 								<DropdownMenuItem onClick={handlePublish}>
 									<ExternalLink className='mr-2 h-4 w-4' />
-									<span>Publish</span>
+									<span>Mark Generated</span>
 								</DropdownMenuItem>
 							)}
 							<DropdownMenuSeparator />

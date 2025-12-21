@@ -29,9 +29,9 @@ export async function generatePlatformContent(
 	});
 
 	if (!response.ok) {
-		const error = (await response.json().catch(() => null)) as
-			| GenerateResponse
-			| null;
+		const error = (await response
+			.json()
+			.catch(() => null)) as GenerateResponse | null;
 		throw new Error(
 			error?.error?.message || 'Failed to generate platform content'
 		);
@@ -45,4 +45,3 @@ export async function generatePlatformContent(
 
 	return data.content;
 }
-

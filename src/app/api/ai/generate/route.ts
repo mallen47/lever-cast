@@ -46,10 +46,15 @@ function buildPrompt({
 		const promptDetails = templatePrompts
 			.map(
 				(p) =>
-					`- ${p.platformId}: ${p.prompt || 'No prompt provided (use defaults)'}`
+					`- ${p.platformId}: ${
+						p.prompt || 'No prompt provided (use defaults)'
+					}`
 			)
 			.join('\n');
-		promptLines.push('Template prompts (use when available):', promptDetails);
+		promptLines.push(
+			'Template prompts (use when available):',
+			promptDetails
+		);
 	}
 
 	promptLines.push('Default style hints when template prompt is missing:');
@@ -231,4 +236,3 @@ export async function POST(request: Request) {
 		}
 	);
 }
-

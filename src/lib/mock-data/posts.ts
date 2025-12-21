@@ -13,12 +13,12 @@ export const mockPosts: Post[] = [
 			'Just launched my new SaaS product! Excited to share this with everyone.',
 		platformContent: {
 			[PLATFORMS.LINKEDIN]:
-				'🎉 Exciting News!\n\nJust launched my new SaaS product! Excited to share this with everyone.\n\nWhat are your thoughts? Let\'s discuss in the comments below! 👇\n\n#Entrepreneurship #Innovation #Business',
+				"🎉 Exciting News!\n\nJust launched my new SaaS product! Excited to share this with everyone.\n\nWhat are your thoughts? Let's discuss in the comments below! 👇\n\n#Entrepreneurship #Innovation #Business",
 			[PLATFORMS.X]:
 				'Just launched my new SaaS product! Excited to share this with everyone.',
 		},
 		templateId: '1',
-		status: 'published',
+		status: 'generated',
 		createdAt: new Date('2024-01-15T10:30:00Z'),
 		updatedAt: new Date('2024-01-15T11:00:00Z'),
 	},
@@ -55,10 +55,10 @@ export const mockPosts: Post[] = [
 	{
 		id: '4',
 		rawContent:
-			'Building in public has been one of the best decisions I\'ve made. The feedback is invaluable.',
+			"Building in public has been one of the best decisions I've made. The feedback is invaluable.",
 		platformContent: {
 			[PLATFORMS.LINKEDIN]:
-				'🚀 Building in public has been one of the best decisions I\'ve made. The feedback is invaluable.\n\nTransparency builds trust and creates a community around your product.\n\n#BuildingInPublic #StartupLife',
+				"🚀 Building in public has been one of the best decisions I've made. The feedback is invaluable.\n\nTransparency builds trust and creates a community around your product.\n\n#BuildingInPublic #StartupLife",
 		},
 		templateId: '1',
 		status: 'draft',
@@ -71,12 +71,12 @@ export const mockPosts: Post[] = [
 			'Excited to announce our Series A funding round! Grateful for the support.',
 		platformContent: {
 			[PLATFORMS.LINKEDIN]:
-				'🎊 Excited to announce our Series A funding round! Grateful for the support.\n\nThis milestone wouldn\'t be possible without our amazing team and investors.\n\n#StartupLife #Funding #Growth',
+				"🎊 Excited to announce our Series A funding round! Grateful for the support.\n\nThis milestone wouldn't be possible without our amazing team and investors.\n\n#StartupLife #Funding #Growth",
 			[PLATFORMS.X]:
 				'Excited to announce our Series A funding round! Grateful for the support.',
 		},
 		templateId: '1',
-		status: 'published',
+		status: 'generated',
 		createdAt: new Date('2024-01-10T08:00:00Z'),
 		updatedAt: new Date('2024-01-10T08:00:00Z'),
 	},
@@ -122,4 +122,3 @@ export function searchPosts(query: string): Post[] {
 		)
 		.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
-

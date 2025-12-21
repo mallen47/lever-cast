@@ -7,7 +7,6 @@ export {
 	fetchPostById,
 	searchPostsByQuery,
 	deletePost,
-	publishPost,
 	createPost,
 	updatePost,
 	saveDraft,

@@ -14,6 +14,7 @@ import { usePostEditor, useUnsavedChangesWarning } from '@/hooks';
 import { useUnsavedChanges } from '@/lib/providers/unsaved-changes-provider';
 import {
 	createPost,
+	updatePost,
 	uploadPostImage,
 	generatePlatformContent,
 } from '@/lib/services';
@@ -241,6 +242,43 @@ export default function EditPostPage() {
 			try {
 				const content = await generatePlatformContent(payload);
 				applyPlatformContent(content);
+
+				// Persist generated status and content
+				try {
+					if (savedPostId) {
+						const updated = await updatePost(savedPostId, {
+							rawContent: rawContent.trim(),
+							platformContent: content,
+							templateId: selectedTemplate || null,
+							imageUrl: imageUrl || null,
+							status: 'generated',
+						});
+						setSavedPostId(updated.id);
+					} else {
+						const newPost = await createPost({
+							rawContent: rawContent.trim(),
+							platformContent: content,
+							templateId: selectedTemplate || undefined,
+							imageUrl: imageUrl || undefined,
+							status: 'generated',
+						});
+						setSavedPostId(newPost.id);
+					}
+					markClean();
+					markContextClean();
+				} catch (persistError) {
+					console.error(
+						'Failed to persist generated status',
+						persistError
+					);
+					toast.error('Saved locally, but DB update failed', {
+						description:
+							persistError instanceof Error
+								? persistError.message
+								: 'Please retry saving.',
+					});
+				}
+
 				toast.success('Platform content generated', {
 					description: 'Review and edit before final publish.',
 				});
@@ -270,7 +308,18 @@ export default function EditPostPage() {
 				setIsPublishing(false);
 			}
 		},
-		[applyPlatformContent, setGeneratingState]
+		[
+			applyPlatformContent,
+			createPost,
+			imageUrl,
+			markClean,
+			markContextClean,
+			rawContent,
+			savedPostId,
+			selectedTemplate,
+			setGeneratingState,
+			updatePost,
+		]
 	);
 
 	// Handle publish (phase 1: send to OpenAI for generation)
