@@ -32,6 +32,7 @@ export default function EditPostPage() {
 	const [isPublishing, setIsPublishing] = useState(false);
 	const [autoSaveTimeout, setAutoSaveTimeout] =
 		useState<NodeJS.Timeout | null>(null);
+	const [hasGenerated, setHasGenerated] = useState(false);
 
 	const {
 		rawContent,
@@ -90,6 +91,9 @@ export default function EditPostPage() {
 					if (postData.imageUrl) {
 						setImageUrl(postData.imageUrl);
 					}
+					if (postData.status === 'generated') {
+						setHasGenerated(true);
+					}
 				} else {
 					toast.error('Post not found', {
 						description:
@@ -121,6 +125,7 @@ export default function EditPostPage() {
 		setSelectedTemplate,
 		setPlatforms,
 		setImageUrl,
+		setHasGenerated,
 	]);
 
 	// Auto-save functionality (debounced)
@@ -240,9 +245,9 @@ export default function EditPostPage() {
 		]
 	);
 
-	// Handle mark as generated (no social publish yet)
+	// Handle generate content (no social publish yet)
 	const handlePublish = useCallback(async () => {
-		if (!postId || isPublishing) return;
+		if (!postId || isPublishing || hasGenerated) return;
 
 		try {
 			setIsPublishing(true);
@@ -257,6 +262,7 @@ export default function EditPostPage() {
 
 			markClean();
 			markContextClean();
+			setHasGenerated(true);
 
 			toast.success('Post marked generated', {
 				description: 'Generated content is ready to review.',
@@ -276,6 +282,7 @@ export default function EditPostPage() {
 		postId,
 		isDirty,
 		isPublishing,
+		hasGenerated,
 		handleSaveDraft,
 		markClean,
 		markContextClean,
@@ -434,13 +441,16 @@ export default function EditPostPage() {
 										disabled={
 											isGenerating ||
 											isPublishing ||
-											isSaving
+											isSaving ||
+											hasGenerated
 										}
 										size='lg'
 									>
-										{isPublishing
-											? 'Marking...'
-											: 'Mark Generated'}
+										{isPublishing || isGenerating
+											? 'Generating...'
+											: hasGenerated
+											? 'Publish'
+											: 'Generate Content'}
 									</Button>
 								)}
 						</div>

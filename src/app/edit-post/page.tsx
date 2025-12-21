@@ -30,6 +30,7 @@ export default function EditPostPage() {
 	const [savedPostId, setSavedPostId] = useState<string | null>(null);
 	const [autoSaveTimeout, setAutoSaveTimeout] =
 		useState<NodeJS.Timeout | null>(null);
+	const [hasGenerated, setHasGenerated] = useState(false);
 	const [selectedTemplateData, setSelectedTemplateData] =
 		useState<Template | null>(null);
 	const lastGenerationPayloadRef =
@@ -235,6 +236,7 @@ export default function EditPostPage() {
 
 	const performGeneration = useCallback(
 		async (payload: GeneratePlatformContentPayload) => {
+			if (hasGenerated) return;
 			setIsPublishing(true);
 			setGeneratingState(true);
 			lastGenerationPayloadRef.current = payload;
@@ -266,6 +268,7 @@ export default function EditPostPage() {
 					}
 					markClean();
 					markContextClean();
+					setHasGenerated(true);
 				} catch (persistError) {
 					console.error(
 						'Failed to persist generated status',
@@ -310,7 +313,6 @@ export default function EditPostPage() {
 		},
 		[
 			applyPlatformContent,
-			createPost,
 			imageUrl,
 			markClean,
 			markContextClean,
@@ -318,13 +320,13 @@ export default function EditPostPage() {
 			savedPostId,
 			selectedTemplate,
 			setGeneratingState,
-			updatePost,
+			hasGenerated,
 		]
 	);
 
 	// Handle publish (phase 1: send to OpenAI for generation)
 	const handlePublish = useCallback(async () => {
-		if (isPublishing || isGenerating) return;
+		if (isPublishing || isGenerating || hasGenerated) return;
 
 		if (!rawContent.trim()) {
 			toast.error('Add some content before publishing.');
@@ -349,6 +351,7 @@ export default function EditPostPage() {
 		buildGenerationPayload,
 		isGenerating,
 		isPublishing,
+		hasGenerated,
 		performGeneration,
 		rawContent,
 		selectedPlatforms.length,
@@ -492,13 +495,16 @@ export default function EditPostPage() {
 										disabled={
 											isGenerating ||
 											isPublishing ||
-											isSaving
+											isSaving ||
+											hasGenerated
 										}
 										size='lg'
 									>
-										{isPublishing
-											? 'Publishing...'
-											: 'Publish'}
+										{isPublishing || isGenerating
+											? 'Generating...'
+											: hasGenerated
+											? 'Publish'
+											: 'Generate Content'}
 									</Button>
 								)}
 						</div>
