@@ -204,24 +204,21 @@ export default function EditPostPage() {
 			try {
 				setIsSaving(true);
 
-				// If this is an existing draft, update it
-				if (post && post.status === 'draft') {
-					await saveDraft(postId, {
-						rawContent,
-						platformContent,
-						templateId: selectedTemplate || null,
-						imageUrl: imageUrl || null,
-					});
-				} else {
-					// Otherwise, update the post
-					await updatePost(postId, {
-						rawContent,
-						platformContent,
-						templateId: selectedTemplate || null,
-						imageUrl: imageUrl || null,
-						status: 'draft',
-					});
-				}
+				// Determine the status to save:
+				// If it was already generated, keep it generated.
+				// Otherwise, it's a draft.
+				const statusToSave =
+					post?.status === 'generated' || hasGenerated
+						? 'generated'
+						: 'draft';
+
+				await updatePost(postId, {
+					rawContent,
+					platformContent,
+					templateId: selectedTemplate || null,
+					imageUrl: imageUrl || null,
+					status: statusToSave,
+				});
 
 				markClean();
 				markContextClean();
