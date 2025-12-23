@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,9 +12,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 import { PostStatusBadge } from './PostStatusBadge';
-import type { Post } from '@/types';
-import { Edit, Trash2, ExternalLink, MoreVertical } from 'lucide-react';
+import type { Post, PlatformId } from '@/types';
+import { Edit, Trash2, ExternalLink, MoreVertical, Type } from 'lucide-react';
 import { formatPostDate } from '@/lib/utils/date';
+import { getPlatformConfig } from '@/lib/platforms';
+import { cn } from '@/lib/utils';
 
 interface PostCardProps {
 	post: Post;
@@ -27,9 +29,28 @@ const CONTENT_PREVIEW_LENGTH = 150;
 
 export function PostCard({ post, onEdit, onDelete, onPublish }: PostCardProps) {
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
-	const contentPreview = post.rawContent.slice(0, CONTENT_PREVIEW_LENGTH);
-	const hasMoreContent = post.rawContent.length > CONTENT_PREVIEW_LENGTH;
-	const platforms = Object.keys(post.platformContent);
+
+	// Get platforms that have content
+	const availablePlatforms = useMemo(() => {
+		return Object.keys(post.platformContent).filter(
+			(p) => !!post.platformContent[p as PlatformId]
+		) as PlatformId[];
+	}, [post.platformContent]);
+
+	// Track the active platform for preview
+	const [activePlatform, setActivePlatform] = useState<PlatformId | 'raw'>(
+		availablePlatforms.length > 0 ? availablePlatforms[0] : 'raw'
+	);
+
+	const previewSource = useMemo(() => {
+		if (activePlatform === 'raw') {
+			return post.rawContent;
+		}
+		return post.platformContent[activePlatform] ?? post.rawContent;
+	}, [activePlatform, post.platformContent, post.rawContent]);
+
+	const contentPreview = previewSource.slice(0, CONTENT_PREVIEW_LENGTH);
+	const hasMoreContent = previewSource.length > CONTENT_PREVIEW_LENGTH;
 
 	const handleEdit = () => {
 		onEdit?.(post);
@@ -100,27 +121,61 @@ export function PostCard({ post, onEdit, onDelete, onPublish }: PostCardProps) {
 			</CardHeader>
 
 			<CardContent className='space-y-4'>
+				{/* Platform Switcher */}
+				{(availablePlatforms.length > 0 || post.rawContent) && (
+					<div className='flex items-center gap-1 p-1 bg-muted/50 rounded-md w-fit'>
+						<button
+							onClick={(e) => {
+								e.stopPropagation();
+								setActivePlatform('raw');
+							}}
+							className={cn(
+								'flex items-center gap-1.5 px-2 py-1 rounded-sm text-xs font-medium transition-colors',
+								activePlatform === 'raw'
+									? 'bg-background text-foreground shadow-sm'
+									: 'text-muted-foreground hover:text-foreground'
+							)}
+							title='Raw Content'
+						>
+							<Type className='h-3.5 w-3.5' />
+							<span className='sr-only sm:not-sr-only'>Raw</span>
+						</button>
+						{availablePlatforms.map((platformId) => {
+							const config = getPlatformConfig(platformId);
+							if (!config) return null;
+							const Icon = config.icon;
+							return (
+								<button
+									key={platformId}
+									onClick={(e) => {
+										e.stopPropagation();
+										setActivePlatform(platformId);
+									}}
+									className={cn(
+										'flex items-center gap-1.5 px-2 py-1 rounded-sm text-xs font-medium transition-colors',
+										activePlatform === platformId
+											? 'bg-background text-foreground shadow-sm'
+											: 'text-muted-foreground hover:text-foreground'
+									)}
+									title={config.name}
+								>
+									<Icon className='h-3.5 w-3.5' />
+									<span className='sr-only sm:not-sr-only'>
+										{config.name}
+									</span>
+								</button>
+							);
+						})}
+					</div>
+				)}
+
 				{/* Content Preview */}
-				<div>
+				<div className='min-h-[4.5rem]'>
 					<p className='text-sm text-foreground line-clamp-3'>
 						{contentPreview}
 						{hasMoreContent && '...'}
 					</p>
 				</div>
-
-				{/* Platform Indicators */}
-				{platforms.length > 0 && (
-					<div className='flex flex-wrap gap-2'>
-						{platforms.map((platform) => (
-							<span
-								key={platform}
-								className='text-xs px-2 py-1 rounded bg-muted text-muted-foreground'
-							>
-								{platform}
-							</span>
-						))}
-					</div>
-				)}
 
 				{/* Image Preview */}
 				{post.imageUrl && (

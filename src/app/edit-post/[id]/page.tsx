@@ -20,7 +20,7 @@ import {
 } from '@/lib/services';
 import { toast } from 'sonner';
 import type { Template } from '@/types/templates';
-import type { Post } from '@/types';
+import type { Post, PlatformContent } from '@/types';
 
 export default function EditPostPage() {
 	const params = useParams();
@@ -50,13 +50,19 @@ export default function EditPostPage() {
 		handleImageChange,
 		setImageUrl,
 		markClean,
+		updatePlatformContent,
+		applyPlatformContent,
 	} = usePostEditor({
 		initialContent: post?.rawContent || '',
 		initialPlatforms: post
 			? (Object.keys(post.platformContent) as typeof selectedPlatforms)
 			: [],
+		initialPlatformContent: post?.platformContent as PlatformContent,
 		initialImageUrl: post?.imageUrl,
 	});
+
+	const hasGeneratedContent =
+		hasGenerated || Object.keys(platformContent).length > 0;
 
 	// Get the unsaved changes context for client-side navigation blocking
 	const { setIsDirty: setContextDirty, markClean: markContextClean } =
@@ -86,6 +92,10 @@ export default function EditPostPage() {
 						Object.keys(
 							postData.platformContent
 						) as typeof selectedPlatforms
+					);
+					applyPlatformContent(
+						postData.platformContent as PlatformContent,
+						false // don't mark dirty during initialization
 					);
 					// Set image URL if it exists
 					if (postData.imageUrl) {
@@ -126,6 +136,7 @@ export default function EditPostPage() {
 		setPlatforms,
 		setImageUrl,
 		setHasGenerated,
+		applyPlatformContent,
 	]);
 
 	// Auto-save functionality (debounced)
@@ -420,6 +431,12 @@ export default function EditPostPage() {
 									imageUrl={imageUrl}
 									selectedPlatforms={selectedPlatforms}
 									rawContent={rawContent}
+									hasGenerated={hasGeneratedContent}
+									onEditPlatformContent={
+										hasGeneratedContent
+											? updatePlatformContent
+											: undefined
+									}
 								/>
 							</Card>
 						)}

@@ -52,9 +52,13 @@ export default function EditPostPage() {
 		handleImageChange,
 		setImageUrl,
 		applyPlatformContent,
+		updatePlatformContent,
 		setGeneratingState,
 		markClean,
 	} = usePostEditor();
+
+	const hasGeneratedContent =
+		hasGenerated || Object.keys(platformContent).length > 0;
 
 	// Get the unsaved changes context for client-side navigation blocking
 	const { setIsDirty: setContextDirty, markClean: markContextClean } =
@@ -469,6 +473,12 @@ export default function EditPostPage() {
 									imageUrl={imageUrl}
 									selectedPlatforms={selectedPlatforms}
 									rawContent={rawContent}
+									hasGenerated={hasGeneratedContent}
+									onEditPlatformContent={
+										hasGeneratedContent
+											? updatePlatformContent
+											: undefined
+									}
 								/>
 							</Card>
 						)}
