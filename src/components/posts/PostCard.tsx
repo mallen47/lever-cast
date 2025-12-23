@@ -13,7 +13,7 @@ import {
 import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 import { PostStatusBadge } from './PostStatusBadge';
 import type { Post, PlatformId } from '@/types';
-import { Edit, Trash2, ExternalLink, MoreVertical, Type } from 'lucide-react';
+import { Edit, Trash2, MoreVertical, Type } from 'lucide-react';
 import { formatPostDate } from '@/lib/utils/date';
 import { getPlatformConfig } from '@/lib/platforms';
 import { cn } from '@/lib/utils';
@@ -22,12 +22,11 @@ interface PostCardProps {
 	post: Post;
 	onEdit?: (post: Post) => void;
 	onDelete?: (postId: string) => void;
-	onPublish?: (postId: string) => void;
 }
 
 const CONTENT_PREVIEW_LENGTH = 150;
 
-export function PostCard({ post, onEdit, onDelete, onPublish }: PostCardProps) {
+export function PostCard({ post, onEdit, onDelete }: PostCardProps) {
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 
 	// Get platforms that have content
@@ -64,10 +63,6 @@ export function PostCard({ post, onEdit, onDelete, onPublish }: PostCardProps) {
 		onDelete?.(post.id);
 	};
 
-	const handlePublish = () => {
-		onPublish?.(post.id);
-	};
-
 	return (
 		<Card>
 			<CardHeader>
@@ -101,12 +96,6 @@ export function PostCard({ post, onEdit, onDelete, onPublish }: PostCardProps) {
 								<Edit className='mr-2 h-4 w-4' />
 								<span>Edit</span>
 							</DropdownMenuItem>
-							{post.status !== 'generated' && (
-								<DropdownMenuItem onClick={handlePublish}>
-									<ExternalLink className='mr-2 h-4 w-4' />
-									<span>Mark Generated</span>
-								</DropdownMenuItem>
-							)}
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								onClick={handleDeleteClick}

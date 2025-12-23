@@ -158,7 +158,7 @@ export default function EditPostPage() {
 						platformContent,
 						templateId: selectedTemplate || null,
 						imageUrl: imageUrl || null,
-						status: 'draft',
+						status: hasGenerated ? 'generated' : 'draft',
 					});
 				} else {
 					// Otherwise, create a new draft
@@ -167,7 +167,7 @@ export default function EditPostPage() {
 						platformContent,
 						templateId: selectedTemplate,
 						imageUrl: imageUrl,
-						status: 'draft',
+						status: hasGenerated ? 'generated' : 'draft',
 					});
 					setSavedPostId(newPost.id);
 				}

@@ -99,29 +99,6 @@ export default function PostsPage() {
 		}
 	};
 
-	const handlePublish = async (postId: string) => {
-		try {
-			await updatePost(postId, { status: 'generated' });
-			await mutate(
-				(prev) =>
-					prev?.map((post) =>
-						post.id === postId
-							? { ...post, status: 'generated' as PostStatus }
-							: post
-					) ?? prev,
-				{ revalidate: false }
-			);
-			toast.success('Post marked generated', {
-				description: 'Generated content is ready to review.',
-			});
-		} catch (error) {
-			console.error('Failed to publish post:', error);
-			toast.error('Failed to publish post', {
-				description: 'Please try again later.',
-			});
-		}
-	};
-
 	return (
 		<MainLayout>
 			<div className='container mx-auto max-w-6xl space-y-6'>
@@ -195,7 +172,6 @@ export default function PostsPage() {
 								post={post}
 								onEdit={() => handleEdit(post)}
 								onDelete={handleDelete}
-								onPublish={handlePublish}
 							/>
 						))}
 					</div>
