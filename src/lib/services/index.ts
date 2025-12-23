@@ -7,9 +7,9 @@ export {
 	fetchPostById,
 	searchPostsByQuery,
 	deletePost,
-	publishPost,
 	createPost,
 	updatePost,
 	saveDraft,
 	uploadPostImage,
 } from './posts';
+export { generatePlatformContent } from './api/generate';

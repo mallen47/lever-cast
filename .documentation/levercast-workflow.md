@@ -1,15 +1,10 @@
-The app's main value proposition is that it helps users to quickly capture and share their ideas to various social media platforms with a single post submission.
+The app we are working on is called LeverCast. Its main value proposition is that it helps users quickly capture and share their ideas to various social media platforms with a single post submission. The LeverCast app's templates feature provides a way for users to categorize customized prompts by topic for various social media platforms. The 'prompt' is the instructions for an LLM to use when composing a social media post based on the user's content idea. 
 
-Here's how it works:
-
--   User has idea they want to post to multiple social media platforms
--   User starts by selecting the option to create a new post
--   The first step in creating a new post is to select a template that best matches the topic idea user wants to share. If the template doesn't exist, he can create one. Templates provides a way for users to categorize customized prompts by topic for various social media platforms, where the 'prompts' are the instructions for an LLM to use when drafting to the post content.
--   User then enters their content idea and uploads an optional image.
--   User then selects the social media platforms he wishes to publish to.
--   Once this is done, the content information is ready to submit to an LLM provider such as OpenAI via API request.
--   Upon 'publish' the app then packages the post content together with the template prompts for each of the specified social media platforms, then sends this request to LLM provider.
--   The LLM then crafts the post content based on this input and responds with a completed post for each of the specified social media platforms.
--   The app then recieves this response and updates the Post Previews accordingly.
--   User can then edit the draft posts if needed or proceed to publish them.
--   The publish step publishes the post content to the user's social media profiles on their behalf.
+### End-to-end workflow: 
+* User has idea they want to share to various social media platforms
+* User selects option to create new post
+* User selects a template that best matches the topic idea he wants to share. If the template doesn't exist, he can create one.
+* On the edit-post page, user enters content idea which may optionally include an image, then selects the social media platforms he wishes to publish to. Here the options for social media platforms are preselected because they are specified by the template, but the user can override them if he wishes.
+* Upon clicking the 'Publish' button, the levercast app must prepare the submission data to send to OpenAI via API request. This means the request payload will included the form data for the post (including image if one is provided), along with the template prompts for each of the specified social media platforms. 
+* LeverCast sends the request data to OpenAI API and waits for its asynchronous response.
+* Upon receiving a valid response from OpenAI, LeverCast processes the response data and updates the Post Previews with the LLM generated post content.

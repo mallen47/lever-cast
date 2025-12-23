@@ -118,6 +118,7 @@ enum Platform {
 
 enum PostStatus {
   DRAFT
+  GENERATED
   SCHEDULED
   PUBLISHED
   FAILED

@@ -3,6 +3,7 @@
 import { LinkedInPreview } from '@/components/previews/LinkedInPreview';
 import { XPreview } from '@/components/previews/XPreview';
 import { getPlatformConfig } from '@/lib/platforms';
+import { Textarea } from '@/components/ui/textarea';
 import { PLATFORMS, type PlatformContent, type PlatformId } from '@/types';
 import type { ComponentType } from 'react';
 
@@ -22,6 +23,8 @@ interface PreviewContainerProps {
 	imageUrl?: string;
 	selectedPlatforms: PlatformId[];
 	rawContent?: string;
+	hasGenerated?: boolean;
+	onEditPlatformContent?: (platformId: PlatformId, value: string) => void;
 }
 
 export function PreviewContainer({
@@ -29,6 +32,8 @@ export function PreviewContainer({
 	imageUrl,
 	selectedPlatforms,
 	rawContent = '',
+	hasGenerated = false,
+	onEditPlatformContent,
 }: PreviewContainerProps) {
 	const hasSelection = selectedPlatforms.length > 0;
 
@@ -40,18 +45,42 @@ export function PreviewContainer({
 					{selectedPlatforms.map((platformId) => {
 						const PreviewComponent = PREVIEW_COMPONENTS[platformId];
 						const config = getPlatformConfig(platformId);
-						// Use formatted content if available, otherwise fall back to raw content
-						const platformContent =
-							content[platformId] ?? rawContent;
+						// If generated, show only generated text. Otherwise, fall back to raw content.
+						const platformContent = hasGenerated
+							? content[platformId] ?? ''
+							: content[platformId] ?? rawContent;
+
+						const isEditable =
+							hasGenerated && !!onEditPlatformContent;
 
 						if (!PreviewComponent) return null;
 
 						return (
-							<div key={platformId} className='space-y-2'>
+							<div key={platformId} className='space-y-3'>
 								<div className='flex items-center gap-2 text-sm font-medium text-muted-foreground'>
 									<config.icon className='h-3 w-3' />
 									{config.name}
 								</div>
+
+								{isEditable && (
+									<div className='space-y-2'>
+										<label className='text-xs font-medium text-muted-foreground'>
+											Edit generated content
+										</label>
+										<Textarea
+											value={platformContent}
+											onChange={(e) =>
+												onEditPlatformContent?.(
+													platformId,
+													e.target.value
+												)
+											}
+											placeholder='Edit generated content for this platform'
+											className='min-h-24'
+										/>
+									</div>
+								)}
+
 								<PreviewComponent
 									content={platformContent}
 									imageUrl={imageUrl}

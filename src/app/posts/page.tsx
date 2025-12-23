@@ -16,7 +16,7 @@ import {
 	fetchPosts,
 	POSTS_SWR_KEY,
 	deletePost,
-	publishPost,
+	updatePost,
 } from '@/lib/services';
 import type { Post, PostStatus } from '@/types';
 import { Search } from 'lucide-react';
@@ -101,18 +101,18 @@ export default function PostsPage() {
 
 	const handlePublish = async (postId: string) => {
 		try {
-			await publishPost(postId);
+			await updatePost(postId, { status: 'generated' });
 			await mutate(
 				(prev) =>
 					prev?.map((post) =>
 						post.id === postId
-							? { ...post, status: 'published' as PostStatus }
+							? { ...post, status: 'generated' as PostStatus }
 							: post
 					) ?? prev,
 				{ revalidate: false }
 			);
-			toast.success('Post published', {
-				description: 'Your post has been successfully published.',
+			toast.success('Post marked generated', {
+				description: 'Generated content is ready to review.',
 			});
 		} catch (error) {
 			console.error('Failed to publish post:', error);
@@ -160,11 +160,11 @@ export default function PostsPage() {
 							<SelectContent>
 								<SelectItem value='all'>All Status</SelectItem>
 								<SelectItem value='draft'>Draft</SelectItem>
+								<SelectItem value='generated'>
+									Generated
+								</SelectItem>
 								<SelectItem value='scheduled'>
 									Scheduled
-								</SelectItem>
-								<SelectItem value='published'>
-									Published
 								</SelectItem>
 								<SelectItem value='failed'>Failed</SelectItem>
 							</SelectContent>

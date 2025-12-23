@@ -13,6 +13,11 @@ const statusConfig: Record<PostStatus, { label: string; className: string }> = {
 		label: 'Draft',
 		className: 'bg-muted text-muted-foreground',
 	},
+	generated: {
+		label: 'Generated',
+		className:
+			'bg-purple-500/10 text-purple-500 dark:bg-purple-500/20 dark:text-purple-300',
+	},
 	scheduled: {
 		label: 'Scheduled',
 		className:

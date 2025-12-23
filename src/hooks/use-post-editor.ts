@@ -10,6 +10,8 @@ interface UsePostEditorOptions {
 	initialPlatforms?: PlatformId[];
 	/** Initial raw content */
 	initialContent?: string;
+	/** Initial platform-specific content */
+	initialPlatformContent?: PlatformContent;
 	/** Initial image URL */
 	initialImageUrl?: string;
 }
@@ -39,6 +41,12 @@ interface UsePostEditorReturn {
 	/** Set image URL directly (for loading existing posts) */
 	setImageUrl: (url: string | undefined) => void;
 	clearError: () => void;
+	applyPlatformContent: (
+		content: PlatformContent,
+		markDirty?: boolean
+	) => void;
+	updatePlatformContent: (platformId: PlatformId, value: string) => void;
+	setGeneratingState: (value: boolean) => void;
 	reset: () => void;
 	/** Mark the form as clean (after saving) */
 	markClean: () => void;
@@ -54,7 +62,9 @@ export function usePostEditor(
 	const [rawContent, setRawContentInternal] = useState(
 		options?.initialContent ?? ''
 	);
-	const [platformContent, setPlatformContent] = useState<PlatformContent>({});
+	const [platformContent, setPlatformContent] = useState<PlatformContent>(
+		options?.initialPlatformContent ?? {}
+	);
 	const [selectedPlatforms, setSelectedPlatforms] = useState<PlatformId[]>(
 		options?.initialPlatforms ?? []
 	);
@@ -68,6 +78,12 @@ export function usePostEditor(
 
 	// Use ref to track the current image URL for cleanup
 	const imageUrlRef = useRef<string | undefined>(undefined);
+	const platformContentRef = useRef<PlatformContent>(platformContent);
+
+	// Update ref whenever platformContent changes
+	useEffect(() => {
+		platformContentRef.current = platformContent;
+	}, [platformContent]);
 
 	// Wrapped setters that mark form as dirty
 	const setRawContent = useCallback((content: string) => {
@@ -136,6 +152,39 @@ export function usePostEditor(
 		setImageUrl(url);
 	}, []);
 
+	const setGeneratingState = useCallback((value: boolean) => {
+		setIsGenerating(value);
+	}, []);
+
+	const applyPlatformContent = useCallback(
+		(content: PlatformContent, markDirty = true) => {
+			setPlatformContent((prev) => {
+				const next = { ...prev };
+				Object.entries(content).forEach(([platformId, value]) => {
+					if (typeof value === 'string' && value.trim()) {
+						next[platformId as PlatformId] = value.trim();
+					}
+				});
+				return next;
+			});
+			if (markDirty) {
+				setIsDirty(true);
+			}
+		},
+		[]
+	);
+
+	const updatePlatformContent = useCallback(
+		(platformId: PlatformId, value: string) => {
+			setPlatformContent((prev) => ({
+				...prev,
+				[platformId]: value,
+			}));
+			setIsDirty(true);
+		},
+		[]
+	);
+
 	// Generate content when platforms, rawContent, or template changes
 	useEffect(() => {
 		// If no platforms selected, clear content
@@ -162,6 +211,12 @@ export function usePostEditor(
 		let cancelled = false;
 
 		const generateContent = async () => {
+			// If we already have platform content for all selected platforms, don't auto-generate mock content
+			const hasAllContent = selectedPlatforms.every(
+				(p) => !!platformContentRef.current[p]
+			);
+			if (hasAllContent) return;
+
 			try {
 				setError(null);
 				setIsGenerating(true);
@@ -251,6 +306,9 @@ export function usePostEditor(
 		handleImageChange,
 		setImageUrl: setImageUrlDirect,
 		clearError,
+		applyPlatformContent,
+		updatePlatformContent,
+		setGeneratingState,
 		reset,
 		markClean,
 	};

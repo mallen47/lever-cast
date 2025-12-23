@@ -16,12 +16,11 @@ import {
 	fetchPostById,
 	updatePost,
 	saveDraft,
-	publishPost,
 	uploadPostImage,
 } from '@/lib/services';
 import { toast } from 'sonner';
 import type { Template } from '@/types/templates';
-import type { Post } from '@/types';
+import type { Post, PlatformContent } from '@/types';
 
 export default function EditPostPage() {
 	const params = useParams();
@@ -33,6 +32,7 @@ export default function EditPostPage() {
 	const [isPublishing, setIsPublishing] = useState(false);
 	const [autoSaveTimeout, setAutoSaveTimeout] =
 		useState<NodeJS.Timeout | null>(null);
+	const [hasGenerated, setHasGenerated] = useState(false);
 
 	const {
 		rawContent,
@@ -50,13 +50,19 @@ export default function EditPostPage() {
 		handleImageChange,
 		setImageUrl,
 		markClean,
+		updatePlatformContent,
+		applyPlatformContent,
 	} = usePostEditor({
 		initialContent: post?.rawContent || '',
 		initialPlatforms: post
 			? (Object.keys(post.platformContent) as typeof selectedPlatforms)
 			: [],
+		initialPlatformContent: post?.platformContent as PlatformContent,
 		initialImageUrl: post?.imageUrl,
 	});
+
+	const hasGeneratedContent =
+		hasGenerated || Object.keys(platformContent).length > 0;
 
 	// Get the unsaved changes context for client-side navigation blocking
 	const { setIsDirty: setContextDirty, markClean: markContextClean } =
@@ -87,9 +93,16 @@ export default function EditPostPage() {
 							postData.platformContent
 						) as typeof selectedPlatforms
 					);
+					applyPlatformContent(
+						postData.platformContent as PlatformContent,
+						false // don't mark dirty during initialization
+					);
 					// Set image URL if it exists
 					if (postData.imageUrl) {
 						setImageUrl(postData.imageUrl);
+					}
+					if (postData.status === 'generated') {
+						setHasGenerated(true);
 					}
 				} else {
 					toast.error('Post not found', {
@@ -122,6 +135,8 @@ export default function EditPostPage() {
 		setSelectedTemplate,
 		setPlatforms,
 		setImageUrl,
+		setHasGenerated,
+		applyPlatformContent,
 	]);
 
 	// Auto-save functionality (debounced)
@@ -241,9 +256,9 @@ export default function EditPostPage() {
 		]
 	);
 
-	// Handle publish
+	// Handle generate content (no social publish yet)
 	const handlePublish = useCallback(async () => {
-		if (!postId || isPublishing) return;
+		if (!postId || isPublishing || hasGenerated) return;
 
 		try {
 			setIsPublishing(true);
@@ -253,23 +268,19 @@ export default function EditPostPage() {
 				await handleSaveDraft(true);
 			}
 
-			// Then publish
-			await publishPost(postId);
+			// Mark as generated (no social publish yet)
+			await updatePost(postId, { status: 'generated' });
 
 			markClean();
 			markContextClean();
+			setHasGenerated(true);
 
-			toast.success('Post published', {
-				description: `Your post has been published to ${
-					selectedPlatforms.length
-				} platform${selectedPlatforms.length > 1 ? 's' : ''}.`,
+			toast.success('Post marked generated', {
+				description: 'Generated content is ready to review.',
 			});
-
-			// Redirect to posts page
-			router.push('/posts');
 		} catch (error) {
-			console.error('Failed to publish post:', error);
-			toast.error('Failed to publish post', {
+			console.error('Failed to mark generated:', error);
+			toast.error('Failed to mark generated', {
 				description:
 					error instanceof Error
 						? error.message
@@ -281,12 +292,11 @@ export default function EditPostPage() {
 	}, [
 		postId,
 		isDirty,
-		selectedPlatforms.length,
 		isPublishing,
+		hasGenerated,
 		handleSaveDraft,
 		markClean,
 		markContextClean,
-		router,
 	]);
 
 	// Handle image upload
@@ -421,6 +431,12 @@ export default function EditPostPage() {
 									imageUrl={imageUrl}
 									selectedPlatforms={selectedPlatforms}
 									rawContent={rawContent}
+									hasGenerated={hasGeneratedContent}
+									onEditPlatformContent={
+										hasGeneratedContent
+											? updatePlatformContent
+											: undefined
+									}
 								/>
 							</Card>
 						)}
@@ -442,13 +458,16 @@ export default function EditPostPage() {
 										disabled={
 											isGenerating ||
 											isPublishing ||
-											isSaving
+											isSaving ||
+											hasGenerated
 										}
 										size='lg'
 									>
-										{isPublishing
-											? 'Publishing...'
-											: 'Publish'}
+										{isPublishing || isGenerating
+											? 'Generating...'
+											: hasGenerated
+											? 'Publish'
+											: 'Generate Content'}
 									</Button>
 								)}
 						</div>
