@@ -4,8 +4,8 @@
  * In production, this will call an LLM API
  */
 
-import { PLATFORMS, type PlatformContent, type PlatformId } from "@/types";
-import { CONTENT_GENERATION_DELAY_MS } from "@/lib/constants";
+import { PLATFORMS, type PlatformContent, type PlatformId } from '@/types';
+import { CONTENT_GENERATION_DELAY_MS } from '@/lib/constants';
 
 /**
  * Generate formatted content for selected platforms
@@ -15,26 +15,28 @@ import { CONTENT_GENERATION_DELAY_MS } from "@/lib/constants";
  * @returns Promise resolving to platform-specific content
  */
 export async function generateFormattedContent(
-  rawContent: string,
-  platforms: PlatformId[],
-  templateId?: string
+	rawContent: string,
+	platforms: PlatformId[],
+	templateId?: string
 ): Promise<PlatformContent> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, CONTENT_GENERATION_DELAY_MS));
+	// Simulate API delay
+	await new Promise((resolve) =>
+		setTimeout(resolve, CONTENT_GENERATION_DELAY_MS)
+	);
 
-  const trimmed = rawContent.trim();
+	const trimmed = rawContent.trim();
 
-  if (!trimmed) {
-    return {};
-  }
+	if (!trimmed) {
+		return {};
+	}
 
-  const content: PlatformContent = {};
+	const content: PlatformContent = {};
 
-  for (const platform of platforms) {
-    content[platform] = formatForPlatform(trimmed, platform, templateId);
-  }
+	for (const platform of platforms) {
+		content[platform] = formatForPlatform(trimmed, platform, templateId);
+	}
 
-  return content;
+	return content;
 }
 
 /**
@@ -42,24 +44,25 @@ export async function generateFormattedContent(
  * In production, this logic would be handled by the LLM
  */
 function formatForPlatform(
-  content: string,
-  platform: PlatformId,
-  templateId?: string
+	content: string,
+	platform: PlatformId,
+	templateId?: string
 ): string {
-  // TODO: Use templateId to modify formatting when template system is implemented
+	void templateId;
+	// TODO: Use templateId to modify formatting when template system is implemented
 
-  switch (platform) {
-    case PLATFORMS.LINKEDIN:
-      // Mock LinkedIn format - more professional, longer form
-      return `🎉 Exciting News!\n\n${content}\n\nWhat are your thoughts? Let's discuss in the comments below! 👇\n\n#Entrepreneurship #Innovation #Business`;
+	switch (platform) {
+		case PLATFORMS.LINKEDIN:
+			// Mock LinkedIn format - more professional, longer form
+			return `🎉 Exciting News!\n\n${content}\n\nWhat are your thoughts? Let's discuss in the comments below! 👇\n\n#Entrepreneurship #Innovation #Business`;
 
-    case PLATFORMS.X:
-      // Mock X format - concise, character-conscious
-      return content.length > 200
-        ? `${content.substring(0, 197)}...`
-        : content;
+		case PLATFORMS.X:
+			// Mock X format - concise, character-conscious
+			return content.length > 200
+				? `${content.substring(0, 197)}...`
+				: content;
 
-    default:
-      return content;
-  }
+		default:
+			return content;
+	}
 }

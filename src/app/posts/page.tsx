@@ -12,12 +12,7 @@ import {
 	SelectValue,
 } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import {
-	fetchPosts,
-	POSTS_SWR_KEY,
-	deletePost,
-	updatePost,
-} from '@/lib/services';
+import { fetchPosts, POSTS_SWR_KEY, deletePost } from '@/lib/services';
 import type { Post, PostStatus } from '@/types';
 import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';

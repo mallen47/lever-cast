@@ -12,12 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { usePostEditor, useUnsavedChangesWarning } from '@/hooks';
 import { useUnsavedChanges } from '@/lib/providers/unsaved-changes-provider';
-import {
-	fetchPostById,
-	updatePost,
-	saveDraft,
-	uploadPostImage,
-} from '@/lib/services';
+import { fetchPostById, updatePost, uploadPostImage } from '@/lib/services';
 import { toast } from 'sonner';
 import type { Template } from '@/types/templates';
 import type { Post, PlatformContent } from '@/types';
@@ -139,51 +134,6 @@ export default function EditPostPage() {
 		applyPlatformContent,
 	]);
 
-	// Auto-save functionality (debounced)
-	useEffect(() => {
-		if (!isDirty || !postId || isLoading || isSaving) {
-			return;
-		}
-
-		// Clear existing timeout
-		if (autoSaveTimeout) {
-			clearTimeout(autoSaveTimeout);
-		}
-
-		// Set new timeout for auto-save (30 seconds after last change)
-		const timeout = setTimeout(async () => {
-			await handleSaveDraft(true); // true = isAutoSave
-		}, 30000);
-
-		setAutoSaveTimeout(timeout);
-
-		return () => {
-			if (timeout) {
-				clearTimeout(timeout);
-			}
-		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [
-		isDirty,
-		postId,
-		isLoading,
-		isSaving,
-		rawContent,
-		platformContent,
-		selectedPlatforms,
-		selectedTemplate,
-		imageUrl,
-	]);
-
-	// Cleanup timeout on unmount
-	useEffect(() => {
-		return () => {
-			if (autoSaveTimeout) {
-				clearTimeout(autoSaveTimeout);
-			}
-		};
-	}, [autoSaveTimeout]);
-
 	// Handle template selection - auto-populate platforms from template
 	const handleTemplateChange = useCallback(
 		(template: Template | null) => {
@@ -248,10 +198,48 @@ export default function EditPostPage() {
 			selectedTemplate,
 			imageUrl,
 			isSaving,
+			hasGenerated,
 			markClean,
 			markContextClean,
 		]
 	);
+
+	// Auto-save functionality (debounced)
+	useEffect(() => {
+		if (!isDirty || !postId || isLoading || isSaving) {
+			return;
+		}
+
+		// Clear existing timeout
+		if (autoSaveTimeout) {
+			clearTimeout(autoSaveTimeout);
+		}
+
+		// Set new timeout for auto-save (30 seconds after last change)
+		const timeout = setTimeout(async () => {
+			await handleSaveDraft(true); // true = isAutoSave
+		}, 30000);
+
+		setAutoSaveTimeout(timeout);
+
+		return () => {
+			if (timeout) {
+				clearTimeout(timeout);
+			}
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [
+		isDirty,
+		postId,
+		isLoading,
+		isSaving,
+		rawContent,
+		platformContent,
+		selectedPlatforms,
+		selectedTemplate,
+		imageUrl,
+		handleSaveDraft,
+	]);
 
 	// Handle generate content (no social publish yet)
 	const handlePublish = useCallback(async () => {
