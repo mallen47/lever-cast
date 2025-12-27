@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useCallback, useState, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ContentInput } from '@/components/content/ContentInput';
 import { ImageUpload } from '@/components/content/ImageUpload';
@@ -24,7 +23,6 @@ import type { PlatformId } from '@/types';
 import type { Template } from '@/types/templates';
 
 export default function EditPostPage() {
-	const searchParams = useSearchParams();
 	const [isSaving, setIsSaving] = useState(false);
 	const [isPublishing, setIsPublishing] = useState(false);
 	const [savedPostId, setSavedPostId] = useState<string | null>(null);
@@ -74,50 +72,6 @@ export default function EditPostPage() {
 		return () => setContextDirty(false);
 	}, [isDirty, setContextDirty]);
 
-	// Auto-save functionality (debounced) - only if we have a saved post
-	useEffect(() => {
-		if (!isDirty || !savedPostId || isSaving) {
-			return;
-		}
-
-		// Clear existing timeout
-		if (autoSaveTimeout) {
-			clearTimeout(autoSaveTimeout);
-		}
-
-		// Set new timeout for auto-save (30 seconds after last change)
-		const timeout = setTimeout(async () => {
-			await handleSaveDraft(true); // true = isAutoSave
-		}, 30000);
-
-		setAutoSaveTimeout(timeout);
-
-		return () => {
-			if (timeout) {
-				clearTimeout(timeout);
-			}
-		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [
-		isDirty,
-		savedPostId,
-		isSaving,
-		rawContent,
-		platformContent,
-		selectedPlatforms,
-		selectedTemplate,
-		imageUrl,
-	]);
-
-	// Cleanup timeout on unmount
-	useEffect(() => {
-		return () => {
-			if (autoSaveTimeout) {
-				clearTimeout(autoSaveTimeout);
-			}
-		};
-	}, [autoSaveTimeout]);
-
 	// Handle template selection - auto-populate platforms from template
 	const handleTemplateChange = useCallback(
 		(template: Template | null) => {
@@ -133,14 +87,6 @@ export default function EditPostPage() {
 		},
 		[setPlatforms]
 	);
-
-	// Handle template query parameter
-	useEffect(() => {
-		const templateId = searchParams.get('template');
-		if (templateId && templateId !== selectedTemplate) {
-			setSelectedTemplate(templateId);
-		}
-	}, [searchParams, selectedTemplate, setSelectedTemplate]);
 
 	// Handle save draft (manual or auto-save)
 	const handleSaveDraft = useCallback(
@@ -199,10 +145,47 @@ export default function EditPostPage() {
 			selectedTemplate,
 			imageUrl,
 			isSaving,
+			hasGenerated,
 			markClean,
 			markContextClean,
 		]
 	);
+
+	// Auto-save functionality (debounced) - only if we have a saved post
+	useEffect(() => {
+		if (!isDirty || !savedPostId || isSaving) {
+			return;
+		}
+
+		// Clear existing timeout
+		if (autoSaveTimeout) {
+			clearTimeout(autoSaveTimeout);
+		}
+
+		// Set new timeout for auto-save (30 seconds after last change)
+		const timeout = setTimeout(async () => {
+			await handleSaveDraft(true); // true = isAutoSave
+		}, 30000);
+
+		setAutoSaveTimeout(timeout);
+
+		return () => {
+			if (timeout) {
+				clearTimeout(timeout);
+			}
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [
+		isDirty,
+		savedPostId,
+		isSaving,
+		rawContent,
+		platformContent,
+		selectedPlatforms,
+		selectedTemplate,
+		imageUrl,
+		handleSaveDraft,
+	]);
 
 	const buildGenerationPayload =
 		useCallback((): GeneratePlatformContentPayload | null => {
